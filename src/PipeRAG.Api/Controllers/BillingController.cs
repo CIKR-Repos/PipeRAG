@@ -19,7 +19,13 @@ public class BillingController : ControllerBase
         _usage = usage;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(claim, out var userId))
+            throw new UnauthorizedAccessException("Invalid or missing user identifier");
+        return userId;
+    }
 
     [Authorize]
     [HttpPost("create-checkout-session")]

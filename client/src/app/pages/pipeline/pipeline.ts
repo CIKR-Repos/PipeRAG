@@ -34,18 +34,20 @@ export class PipelineComponent implements OnInit {
   }
 
   onConfigChange(blockId: string, key: string, event: Event): void {
-    const el = event.target as HTMLInputElement;
+    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
     this.svc.updateBlockConfig(blockId, key, el.value);
   }
 
   onConfigChangeNum(blockId: string, key: string, event: Event): void {
-    const el = event.target as HTMLInputElement;
-    this.svc.updateBlockConfig(blockId, key, parseInt(el.value, 10));
+    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const parsed = parseInt(el.value, 10);
+    if (!isNaN(parsed)) this.svc.updateBlockConfig(blockId, key, parsed);
   }
 
   onConfigChangeFloat(blockId: string, key: string, event: Event): void {
-    const el = event.target as HTMLInputElement;
-    this.svc.updateBlockConfig(blockId, key, parseFloat(el.value));
+    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const parsed = parseFloat(el.value);
+    if (!isNaN(parsed)) this.svc.updateBlockConfig(blockId, key, parsed);
   }
 
   onConfigChangeBool(blockId: string, key: string, event: Event): void {
@@ -85,9 +87,9 @@ export class PipelineComponent implements OnInit {
     const c = block.config;
     switch (block.type) {
       case 'source': return c['sourceType'] + ' · ' + c['fileTypes'];
-      case 'chunking': return c['strategy'] + ' · ' + c['chunkSize'] + ' chars';
+      case 'chunking': return c['strategy'] + ' · ' + c['chunkSize'] + ' tokens · ' + c['chunkOverlap'] + ' overlap';
       case 'embedding': return c['model'] + ' · ' + c['dimensions'] + 'd';
-      case 'retrieval': return c['strategy'] + ' · top ' + c['topK'];
+      case 'retrieval': return c['strategy'] + ' · top ' + c['topK'] + ' · threshold ' + c['scoreThreshold'];
       case 'generation': return c['model'] + ' · temp ' + c['temperature'];
       default: return '';
     }

@@ -165,8 +165,8 @@ public class StripeService : IBillingService
             "trialing" => SubscriptionStatus.Trialing,
             _ => SubscriptionStatus.Active
         };
-        sub.CurrentPeriodStart = stripeSub.Created;
-        sub.CurrentPeriodEnd = stripeSub.EndedAt;
+        sub.CurrentPeriodStart = stripeSub.CurrentPeriodStart;
+        sub.CurrentPeriodEnd = stripeSub.CurrentPeriodEnd;
         sub.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

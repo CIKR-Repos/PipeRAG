@@ -49,3 +49,5 @@ Required in `appsettings.json`:
   }
 }
 ```
+
+> ⚠️ **Security:** Never commit real Stripe keys to source control. Use environment variables, user secrets (`dotnet user-secrets`), or a key vault for production deployments.

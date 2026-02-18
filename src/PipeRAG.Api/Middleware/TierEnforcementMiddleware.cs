@@ -23,7 +23,7 @@ public class TierEnforcementMiddleware
         var path = context.Request.Path.Value?.ToLower() ?? "";
         var method = context.Request.Method;
 
-        if (method != "POST" || !context.User.Identity?.IsAuthenticated == true)
+        if (!HttpMethods.IsPost(method) || context.User.Identity?.IsAuthenticated != true)
         {
             await _next(context);
             return;
