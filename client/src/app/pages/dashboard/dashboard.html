@@ -34,6 +34,14 @@
             <span>📄 {{ p.documentCount }} docs</span>
             <span>{{ timeAgo(p.updatedAt ?? p.createdAt) }}</span>
           </div>
+          <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+            <a [routerLink]="['/projects', p.id, 'pipeline']"
+               class="text-xs text-indigo-500 hover:text-indigo-700 no-underline font-medium"
+               (click)="$event.stopPropagation()">⚙️ Pipeline</a>
+            <a [routerLink]="['/projects', p.id, 'widget']"
+               class="text-xs text-indigo-500 hover:text-indigo-700 no-underline font-medium"
+               (click)="$event.stopPropagation()">🔌 Widget</a>
+          </div>
         </a>
       }
       <button (click)="openCreate()"

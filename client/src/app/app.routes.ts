@@ -41,6 +41,11 @@ export const routes: Routes = [
   {
     path: 'projects/:projectId/widget',
     canActivate: [authGuard],
+    loadComponent: () => import('./pages/widget-settings/widget-settings').then((m) => m.WidgetSettingsComponent),
+  },
+  {
+    path: 'projects/:projectId/widget',
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/widget-config/widget-config').then((m) => m.WidgetConfigComponent),
   },
 ];
