@@ -21,6 +21,9 @@ export interface PipelineDto {
   updatedAt: string | null;
 }
 
+export type PipelineStep = 'source' | 'chunking' | 'embedding' | 'retrieval' | 'generation' | 'review';
+const STEPS: PipelineStep[] = ['source', 'chunking', 'embedding', 'retrieval', 'generation', 'review'];
+
 const SAMPLE_TEXT =
   'Retrieval-Augmented Generation (RAG) is a technique that combines information retrieval with text generation. ' +
   'It first retrieves relevant documents from a knowledge base using semantic search, then feeds those documents ' +
@@ -40,6 +43,17 @@ export class PipelineService {
   readonly saving = signal(false);
   readonly dirty = signal(false);
   readonly pipelineId = signal<string | null>(null);
+  readonly pipelineStatus = signal<string>('idle');
+  readonly isRunning = signal(false);
+  readonly saveError = signal<string | null>(null);
+  readonly documents = signal<{ id: string; fileName: string; fileType: string; fileSize: number; status: string }[]>([]);
+  readonly currentStep = signal<PipelineStep>('source');
+  readonly currentStepIndex = computed(() => STEPS.indexOf(this.currentStep()));
+  readonly stepCount = STEPS.length;
+  readonly steps = STEPS;
+  readonly progressPercent = computed(() => Math.round(((this.currentStepIndex() + 1) / this.stepCount) * 100));
+  readonly isSaving = this.saving;
+  readonly isLoading = this.loading;
 
   readonly selectedBlock = computed(() => {
     const id = this.selectedBlockId();
@@ -49,8 +63,8 @@ export class PipelineService {
   readonly chunkPreviews = computed<ChunkPreview[]>(() => {
     const chunkingBlock = this.blocks().find((b: PipelineBlock) => b.type === 'chunking');
     if (!chunkingBlock) return [];
-    const size: number = chunkingBlock.config['chunkSize'] ?? 512;
-    const overlap: number = chunkingBlock.config['chunkOverlap'] ?? 50;
+    const size = Number(chunkingBlock.config['chunkSize'] ?? 512);
+    const overlap = Number(chunkingBlock.config['chunkOverlap'] ?? 50);
     return this.generateChunkPreviews(SAMPLE_TEXT, size, overlap);
   });
 
@@ -59,12 +73,12 @@ export class PipelineService {
     const retrieval = this.blocks().find((b: PipelineBlock) => b.type === 'retrieval');
     const generation = this.blocks().find((b: PipelineBlock) => b.type === 'generation');
     return {
-      chunkSize: (chunking?.config['chunkSize'] as number) ?? 512,
-      chunkOverlap: (chunking?.config['chunkOverlap'] as number) ?? 50,
-      retrievalStrategy: (retrieval?.config['strategy'] as string) ?? 'semantic',
-      topK: (retrieval?.config['topK'] as number) ?? 5,
-      scoreThreshold: (retrieval?.config['scoreThreshold'] as number) ?? 0.7,
-      temperature: (generation?.config['temperature'] as number) ?? 0.7,
+      chunkSize: Number(chunking?.config['chunkSize'] ?? 512),
+      chunkOverlap: Number(chunking?.config['chunkOverlap'] ?? 50),
+      retrievalStrategy: String(retrieval?.config['strategy'] ?? 'semantic'),
+      topK: Number(retrieval?.config['topK'] ?? 5),
+      scoreThreshold: Number(retrieval?.config['scoreThreshold'] ?? 0.7),
+      temperature: Number(generation?.config['temperature'] ?? 0.7),
     };
   });
 
@@ -135,6 +149,7 @@ export class PipelineService {
         retrieval.config['scoreThreshold'] = p.config.scoreThreshold;
         this.blocks.set(blocks);
       }
+      await this.loadDocuments(projectId);
     } finally {
       this.loading.set(false);
       this.dirty.set(false);
@@ -151,9 +166,7 @@ export class PipelineService {
         config: {
           chunkSize: cfg.chunkSize,
           chunkOverlap: cfg.chunkOverlap,
-          embeddingModel:
-            (this.blocks().find((b: PipelineBlock) => b.type === 'embedding')?.config['model'] as string) ??
-            'text-embedding-3-small',
+          embeddingModel: String(this.blocks().find((b: PipelineBlock) => b.type === 'embedding')?.config['model'] ?? 'text-embedding-3-small'),
           retrievalStrategy: cfg.retrievalStrategy,
           topK: cfg.topK,
           scoreThreshold: cfg.scoreThreshold,
@@ -172,6 +185,48 @@ export class PipelineService {
       this.dirty.set(false);
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  nextStep(): void {
+    const idx = this.currentStepIndex();
+    if (idx < STEPS.length - 1) this.currentStep.set(STEPS[idx + 1]);
+  }
+
+  prevStep(): void {
+    const idx = this.currentStepIndex();
+    if (idx > 0) this.currentStep.set(STEPS[idx - 1]);
+  }
+
+  goToStep(step: PipelineStep): void {
+    this.currentStep.set(step);
+  }
+
+  async runPipeline(projectId: string): Promise<void> {
+    const pid = this.pipelineId();
+    if (!pid) return;
+    this.isRunning.set(true);
+    this.pipelineStatus.set('running');
+    try {
+      await firstValueFrom(this.http.post('/api/projects/' + projectId + '/pipelines/' + pid + '/run', {}));
+      this.pipelineStatus.set('completed');
+    } catch {
+      this.pipelineStatus.set('failed');
+    } finally {
+      this.isRunning.set(false);
+    }
+  }
+
+  async loadDocuments(projectId: string): Promise<void> {
+    try {
+      const docs = await firstValueFrom(
+        this.http.get<{ id: string; fileName: string; fileType: string; fileSize: number; status: string }[]>(
+          '/api/projects/' + projectId + '/documents'
+        )
+      );
+      this.documents.set(docs);
+    } catch {
+      this.documents.set([]);
     }
   }
 

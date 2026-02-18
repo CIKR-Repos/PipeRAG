@@ -23,4 +23,6 @@ public class User
     public ICollection<ChatSession> ChatSessions { get; set; } = [];
     public ICollection<AuditLog> AuditLogs { get; set; } = [];
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
+    public Subscription? Subscription { get; set; }
+    public ICollection<UsageRecord> UsageRecords { get; set; } = [];
 }

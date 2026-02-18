@@ -51,6 +51,10 @@ builder.Services.AddHostedService<PipelineBackgroundService>();
 builder.Services.AddScoped<IConversationMemoryService, ConversationMemoryService>();
 builder.Services.AddScoped<IQueryEngineService, QueryEngineService>();
 
+// Billing + Usage services
+builder.Services.AddScoped<IBillingService, StripeService>();
+builder.Services.AddScoped<IUsageTrackingService, UsageTrackingService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtSecret = jwtSection["Secret"];
@@ -94,6 +98,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<TierEnforcementMiddleware>();
 app.MapControllers();
 
 // Health check endpoint

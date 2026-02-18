@@ -47,6 +47,15 @@ public enum ChatMessageRole
     System
 }
 
+public enum SubscriptionStatus
+{
+    Active,
+    PastDue,
+    Cancelled,
+    Incomplete,
+    Trialing
+}
+
 public enum AuditAction
 {
     Create,
