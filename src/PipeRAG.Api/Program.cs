@@ -40,6 +40,13 @@ builder.Services.AddSingleton<IFileStorageService>(new LocalFileStorageService(
 builder.Services.AddScoped<IDocumentProcessor, DocumentProcessor>();
 builder.Services.AddScoped<IChunkingService, ChunkingService>();
 
+// RAG Pipeline services
+builder.Services.AddSingleton<IModelRouterService, ModelRouterService>();
+builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
+builder.Services.AddSingleton<PipelineRunChannel>();
+builder.Services.AddScoped<IAutoPipelineService, AutoPipelineService>();
+builder.Services.AddHostedService<PipelineBackgroundService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtSecret = jwtSection["Secret"];
