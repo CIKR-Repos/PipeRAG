@@ -38,4 +38,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/pipeline/pipeline').then((m) => m.PipelineComponent),
   },
+  {
+    path: 'projects/:projectId/widget',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/widget-config/widget-config').then((m) => m.WidgetConfigComponent),
+  },
 ];
