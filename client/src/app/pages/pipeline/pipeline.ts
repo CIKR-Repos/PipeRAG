@@ -1,26 +1,19 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CdkDropList, CdkDrag, CdkDragDrop, CdkDragHandle, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
-import { PipelineService, PipelineBlock, BlockType } from './pipeline.service';
-
-const BLOCK_COLORS: Record<BlockType, { border: string; bg: string; iconBg: string; badge: string }> = {
-  source: { border: 'border-blue-300', bg: 'bg-blue-50', iconBg: 'bg-blue-100', badge: 'text-blue-700' },
-  chunking: { border: 'border-amber-300', bg: 'bg-amber-50', iconBg: 'bg-amber-100', badge: 'text-amber-700' },
-  embedding: { border: 'border-purple-300', bg: 'bg-purple-50', iconBg: 'bg-purple-100', badge: 'text-purple-700' },
-  retrieval: { border: 'border-emerald-300', bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', badge: 'text-emerald-700' },
-  generation: { border: 'border-rose-300', bg: 'bg-rose-50', iconBg: 'bg-rose-100', badge: 'text-rose-700' },
-};
+import { NavbarComponent } from '../../shared/components/navbar/navbar';
+import { PipelineService } from '../../features/pipeline-builder/pipeline.service';
+import { PipelineBlock, BlockType } from '../../features/pipeline-builder/pipeline-block.model';
 
 @Component({
   selector: 'app-pipeline',
   standalone: true,
-  imports: [CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder],
-  providers: [PipelineService],
+  imports: [NavbarComponent, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder],
   templateUrl: './pipeline.html',
 })
 export class PipelineComponent implements OnInit {
+  readonly svc = inject(PipelineService);
   private route = inject(ActivatedRoute);
-  readonly svc: PipelineService = inject(PipelineService);
   private projectId = '';
 
   ngOnInit() {
@@ -31,9 +24,7 @@ export class PipelineComponent implements OnInit {
   }
 
   onDrop(event: CdkDragDrop<PipelineBlock[]>) {
-    if (event.previousIndex !== event.currentIndex) {
-      this.svc.reorderBlocks(event.previousIndex, event.currentIndex);
-    }
+    this.svc.moveBlock(event.previousIndex, event.currentIndex);
   }
 
   save() {
@@ -42,28 +33,53 @@ export class PipelineComponent implements OnInit {
     }
   }
 
+  runPipeline() {
+    if (this.projectId) {
+      this.svc.runPipeline(this.projectId);
+    }
+  }
+
   blockClass(block: PipelineBlock): string {
-    const c = BLOCK_COLORS[block.type];
     const selected = this.svc.selectedBlockId() === block.id;
-    return `${c.border} ${c.bg} ${selected ? 'ring-2 ring-indigo-500 shadow-md' : ''}`;
+    const colors: Record<BlockType, string> = {
+      source: selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white',
+      chunking: selected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 bg-white',
+      embedding: selected ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-white',
+      retrieval: selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white',
+      generation: selected ? 'border-rose-500 bg-rose-50' : 'border-gray-200 bg-white',
+    };
+    return colors[block.type];
   }
 
   blockIconBg(block: PipelineBlock): string {
-    return BLOCK_COLORS[block.type].iconBg;
+    const colors: Record<BlockType, string> = {
+      source: 'bg-emerald-100',
+      chunking: 'bg-amber-100',
+      embedding: 'bg-purple-100',
+      retrieval: 'bg-blue-100',
+      generation: 'bg-rose-100',
+    };
+    return colors[block.type];
   }
 
   blockTypeBadge(block: PipelineBlock): string {
-    return BLOCK_COLORS[block.type].badge;
+    const colors: Record<BlockType, string> = {
+      source: 'text-emerald-700',
+      chunking: 'text-amber-700',
+      embedding: 'text-purple-700',
+      retrieval: 'text-blue-700',
+      generation: 'text-rose-700',
+    };
+    return colors[block.type];
   }
 
   blockSummary(block: PipelineBlock): string {
-    const c = block.config;
     switch (block.type) {
-      case 'source': return `${c['sourceType']} · ${c['fileTypes']}`;
-      case 'chunking': return `${c['strategy']} · ${c['chunkSize']} chars · ${c['chunkOverlap']} overlap`;
-      case 'embedding': return `${c['model']} · ${c['dimensions']}d`;
-      case 'retrieval': return `${c['strategy']} · top ${c['topK']} · threshold ${c['scoreThreshold']}`;
-      case 'generation': return `${c['model']} · temp ${c['temperature']} · ${c['maxTokens']} tokens`;
+      case 'source': return `${block.config['sourceType']} · ${block.config['fileTypes']}`;
+      case 'chunking': return `${block.config['strategy']} · ${block.config['chunkSize']} tokens · ${block.config['chunkOverlap']} overlap`;
+      case 'embedding': return `${block.config['model']} · ${block.config['dimensions']}d`;
+      case 'retrieval': return `${block.config['strategy']} · top ${block.config['topK']} · threshold ${block.config['scoreThreshold']}`;
+      case 'generation': return `${block.config['model']} · temp ${block.config['temperature']}`;
       default: return '';
     }
   }
@@ -75,12 +91,18 @@ export class PipelineComponent implements OnInit {
 
   onConfigChangeNum(blockId: string, key: string, event: Event) {
     const el = event.target as HTMLInputElement;
-    this.svc.updateBlockConfig(blockId, key, parseInt(el.value, 10));
+    const parsed = parseInt(el.value, 10);
+    if (!isNaN(parsed)) {
+      this.svc.updateBlockConfig(blockId, key, parsed);
+    }
   }
 
   onConfigChangeFloat(blockId: string, key: string, event: Event) {
     const el = event.target as HTMLInputElement;
-    this.svc.updateBlockConfig(blockId, key, parseFloat(el.value));
+    const parsed = parseFloat(el.value);
+    if (!isNaN(parsed)) {
+      this.svc.updateBlockConfig(blockId, key, parsed);
+    }
   }
 
   onConfigChangeBool(blockId: string, key: string, event: Event) {
