@@ -24,6 +24,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardComponent),
   },
   {
+    path: 'projects/:projectId/chat',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/chat/chat.component').then((m) => m.ChatComponent),
+  },
+  {
     path: 'projects/:projectId/pipeline',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/pipeline/pipeline').then((m) => m.PipelineComponent),
