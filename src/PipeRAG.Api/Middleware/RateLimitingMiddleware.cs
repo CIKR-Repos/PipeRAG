@@ -1,14 +1,14 @@
-using System.Collections.Concurrent;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace PipeRAG.Api.Middleware;
 
 /// <summary>
-/// Per-tier rate limiting middleware using in-memory storage.
+/// Per-tier rate limiting middleware using IMemoryCache for automatic eviction.
 /// </summary>
 public class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
-    private static readonly ConcurrentDictionary<string, RateLimitEntry> _entries = new();
+    private readonly IMemoryCache _cache;
 
     private static readonly Dictionary<string, int> TierLimits = new()
     {
@@ -17,9 +17,10 @@ public class RateLimitingMiddleware
         ["Enterprise"] = 10000
     };
 
-    public RateLimitingMiddleware(RequestDelegate next)
+    public RateLimitingMiddleware(RequestDelegate next, IMemoryCache cache)
     {
         _next = next;
+        _cache = cache;
     }
 
     /// <summary>
@@ -47,7 +48,11 @@ public class RateLimitingMiddleware
         var key = $"rate:{userId}";
         var now = DateTime.UtcNow;
 
-        var entry = _entries.GetOrAdd(key, _ => new RateLimitEntry(now));
+        var entry = _cache.GetOrCreate(key, cacheEntry =>
+        {
+            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+            return new RateLimitEntry(now);
+        })!;
 
         int? retryAfter = null;
 

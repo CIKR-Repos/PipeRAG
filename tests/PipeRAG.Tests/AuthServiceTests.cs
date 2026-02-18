@@ -71,6 +71,18 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Login_DeactivatedUser_Throws()
+    {
+        await _sut.RegisterAsync(new RegisterRequest("inactive@test.com", "Password123!", "Inactive User"));
+        var user = await _db.Users.SingleAsync(u => u.Email == "inactive@test.com");
+        user.IsActive = false;
+        await _db.SaveChangesAsync();
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _sut.LoginAsync(new LoginRequest("inactive@test.com", "Password123!")));
+        Assert.Equal("Account is deactivated.", exception.Message);
+    }
+
+    [Fact]
     public async Task Login_NonexistentUser_Throws()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(

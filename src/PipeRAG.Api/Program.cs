@@ -12,6 +12,7 @@ using PipeRAG.Infrastructure.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
