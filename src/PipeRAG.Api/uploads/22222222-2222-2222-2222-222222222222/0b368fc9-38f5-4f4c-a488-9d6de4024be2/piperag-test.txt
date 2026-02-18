@@ -1,8 +1,0 @@
-PipeRAG is a revolutionary no-code RAG pipeline builder designed for non-technical users.
-It enables anyone to create an AI-powered chatbot in just 30 seconds by simply uploading their documents.
-The platform supports multiple file formats including PDF, DOCX, TXT, Markdown, and CSV files.
-Users can configure chunking strategies, embedding models, and retrieval parameters through an intuitive visual pipeline builder.
-PipeRAG uses pgvector for efficient vector similarity search and Microsoft Semantic Kernel for AI orchestration.
-The free tier includes 500 queries per month, 2 chatbots, and uses OpenAI's text-embedding-3-small model.
-Pro users get access to larger embedding models, hybrid retrieval with Cohere reranking, and up to 50 chatbots.
-Enterprise customers receive dedicated support, custom model integration, and unlimited usage.
