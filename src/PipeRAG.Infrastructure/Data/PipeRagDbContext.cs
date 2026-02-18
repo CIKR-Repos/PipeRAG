@@ -32,6 +32,9 @@ public class PipeRagDbContext : DbContext
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
+    public DbSet<WidgetConfig> WidgetConfigs => Set<WidgetConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -134,6 +137,28 @@ public class PipeRagDbContext : DbContext
             e.HasIndex(r => r.Token).IsUnique();
             e.HasIndex(r => r.UserId);
             e.HasOne(r => r.User).WithMany(u => u.RefreshTokens).HasForeignKey(r => r.UserId);
+        });
+
+        modelBuilder.Entity<Subscription>(e =>
+        {
+            e.HasIndex(s => s.UserId).IsUnique();
+            e.HasIndex(s => s.StripeCustomerId);
+            e.HasIndex(s => s.StripeSubscriptionId);
+            e.Property(s => s.Tier).HasConversion<string>().HasMaxLength(20);
+            e.Property(s => s.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(s => s.User).WithOne(u => u.Subscription).HasForeignKey<Subscription>(s => s.UserId);
+        });
+
+        modelBuilder.Entity<UsageRecord>(e =>
+        {
+            e.HasIndex(u => new { u.UserId, u.Date }).IsUnique();
+            e.HasOne(u => u.User).WithMany(u => u.UsageRecords).HasForeignKey(u => u.UserId);
+        });
+
+        modelBuilder.Entity<WidgetConfig>(e =>
+        {
+            e.HasIndex(w => w.ProjectId).IsUnique();
+            e.HasOne(w => w.Project).WithMany().HasForeignKey(w => w.ProjectId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

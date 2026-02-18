@@ -16,27 +16,43 @@ export class PipelineComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private projectId = '';
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.projectId = this.route.snapshot.paramMap.get('projectId') ?? '';
     if (this.projectId) {
       this.svc.loadPipeline(this.projectId);
     }
   }
 
-  onDrop(event: CdkDragDrop<PipelineBlock[]>) {
+  onDrop(event: CdkDragDrop<PipelineBlock[]>): void {
     this.svc.moveBlock(event.previousIndex, event.currentIndex);
   }
 
-  save() {
+  save(): void {
     if (this.projectId) {
       this.svc.savePipeline(this.projectId);
     }
   }
 
-  runPipeline() {
-    if (this.projectId) {
-      this.svc.runPipeline(this.projectId);
-    }
+  onConfigChange(blockId: string, key: string, event: Event): void {
+    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    this.svc.updateBlockConfig(blockId, key, el.value);
+  }
+
+  onConfigChangeNum(blockId: string, key: string, event: Event): void {
+    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const parsed = parseInt(el.value, 10);
+    if (!isNaN(parsed)) this.svc.updateBlockConfig(blockId, key, parsed);
+  }
+
+  onConfigChangeFloat(blockId: string, key: string, event: Event): void {
+    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const parsed = parseFloat(el.value);
+    if (!isNaN(parsed)) this.svc.updateBlockConfig(blockId, key, parsed);
+  }
+
+  onConfigChangeBool(blockId: string, key: string, event: Event): void {
+    const el = event.target as HTMLInputElement;
+    this.svc.updateBlockConfig(blockId, key, el.checked);
   }
 
   blockClass(block: PipelineBlock): string {
@@ -53,60 +69,29 @@ export class PipelineComponent implements OnInit {
 
   blockIconBg(block: PipelineBlock): string {
     const colors: Record<BlockType, string> = {
-      source: 'bg-emerald-100',
-      chunking: 'bg-amber-100',
-      embedding: 'bg-purple-100',
-      retrieval: 'bg-blue-100',
-      generation: 'bg-rose-100',
+      source: 'bg-emerald-100', chunking: 'bg-amber-100', embedding: 'bg-purple-100',
+      retrieval: 'bg-blue-100', generation: 'bg-rose-100',
     };
     return colors[block.type];
   }
 
   blockTypeBadge(block: PipelineBlock): string {
     const colors: Record<BlockType, string> = {
-      source: 'text-emerald-700',
-      chunking: 'text-amber-700',
-      embedding: 'text-purple-700',
-      retrieval: 'text-blue-700',
-      generation: 'text-rose-700',
+      source: 'text-emerald-700', chunking: 'text-amber-700', embedding: 'text-purple-700',
+      retrieval: 'text-blue-700', generation: 'text-rose-700',
     };
     return colors[block.type];
   }
 
   blockSummary(block: PipelineBlock): string {
+    const c = block.config;
     switch (block.type) {
-      case 'source': return `${block.config['sourceType']} · ${block.config['fileTypes']}`;
-      case 'chunking': return `${block.config['strategy']} · ${block.config['chunkSize']} tokens · ${block.config['chunkOverlap']} overlap`;
-      case 'embedding': return `${block.config['model']} · ${block.config['dimensions']}d`;
-      case 'retrieval': return `${block.config['strategy']} · top ${block.config['topK']} · threshold ${block.config['scoreThreshold']}`;
-      case 'generation': return `${block.config['model']} · temp ${block.config['temperature']}`;
+      case 'source': return c['sourceType'] + ' · ' + c['fileTypes'];
+      case 'chunking': return c['strategy'] + ' · ' + c['chunkSize'] + ' tokens · ' + c['chunkOverlap'] + ' overlap';
+      case 'embedding': return c['model'] + ' · ' + c['dimensions'] + 'd';
+      case 'retrieval': return c['strategy'] + ' · top ' + c['topK'] + ' · threshold ' + c['scoreThreshold'];
+      case 'generation': return c['model'] + ' · temp ' + c['temperature'];
       default: return '';
     }
-  }
-
-  onConfigChange(blockId: string, key: string, event: Event) {
-    const el = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-    this.svc.updateBlockConfig(blockId, key, el.value);
-  }
-
-  onConfigChangeNum(blockId: string, key: string, event: Event) {
-    const el = event.target as HTMLInputElement;
-    const parsed = parseInt(el.value, 10);
-    if (!isNaN(parsed)) {
-      this.svc.updateBlockConfig(blockId, key, parsed);
-    }
-  }
-
-  onConfigChangeFloat(blockId: string, key: string, event: Event) {
-    const el = event.target as HTMLInputElement;
-    const parsed = parseFloat(el.value);
-    if (!isNaN(parsed)) {
-      this.svc.updateBlockConfig(blockId, key, parsed);
-    }
-  }
-
-  onConfigChangeBool(blockId: string, key: string, event: Event) {
-    const el = event.target as HTMLInputElement;
-    this.svc.updateBlockConfig(blockId, key, el.checked);
   }
 }

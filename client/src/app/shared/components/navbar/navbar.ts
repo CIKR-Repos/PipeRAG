@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </a>
       <div class="flex items-center gap-4">
         <span class="text-sm text-white/80 hidden sm:inline">{{ userEmail() }}</span>
+        <a routerLink="/billing" class="text-sm text-white/70 hover:text-white transition no-underline">Billing</a>
         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase"
               [class]="tierClass()">
           {{ userTier() }}
