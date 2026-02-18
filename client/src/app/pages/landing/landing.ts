@@ -1,6 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-landing',
@@ -9,9 +8,6 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './landing.html',
 })
 export class LandingComponent {
-  private auth = inject(AuthService);
-  private router = inject(Router);
-
   features = [
     { icon: '🪄', title: 'Auto-Pipeline', desc: 'Upload any document and we automatically build the optimal chunking, embedding, and retrieval pipeline.' },
     { icon: '👁️', title: 'Chunk Preview', desc: 'See exactly how your documents are split, embedded, and indexed. Full transparency into your RAG pipeline.' },
@@ -23,10 +19,4 @@ export class LandingComponent {
     { num: 2, title: 'Configure', desc: 'Customize chunking, embeddings & prompts' },
     { num: 3, title: 'Chat', desc: 'Ask questions and get accurate answers' },
   ];
-
-  constructor() {
-    if (this.auth.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
-    }
-  }
 }

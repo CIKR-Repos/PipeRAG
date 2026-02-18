@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -24,6 +26,7 @@ public class QueryEngineService : IQueryEngineService
     private readonly IConversationMemoryService _memory;
     private readonly IConfiguration _config;
     private readonly ILogger<QueryEngineService> _logger;
+    private readonly ConcurrentDictionary<string, Kernel> _chatKernelCache = new();
 
     public QueryEngineService(
         PipeRagDbContext db,
@@ -60,10 +63,10 @@ public class QueryEngineService : IQueryEngineService
         var kernel = BuildChatKernel(models.ChatModel);
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
 
-        var chatHistory = BuildChatHistory(conversationHistory, sources, userMessage);
+        var chatHistory = BuildChatHistory(conversationHistory, sources);
         var result = await chatService.GetChatMessageContentAsync(chatHistory, cancellationToken: ct);
         var responseText = result.Content ?? string.Empty;
-        var tokensUsed = responseText.Length / 4; // Rough estimate
+        var tokensUsed = responseText.Length / 4;
 
         // Store assistant message
         await _memory.AddMessageAsync(sessionId, ChatMessageRole.Assistant, responseText, tokensUsed, ct);
@@ -89,23 +92,23 @@ public class QueryEngineService : IQueryEngineService
         var conversationHistory = await _memory.GetConversationWindowAsync(sessionId, ct: ct);
         var kernel = BuildChatKernel(models.ChatModel);
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
-        var chatHistory = BuildChatHistory(conversationHistory, sources, userMessage);
+        var chatHistory = BuildChatHistory(conversationHistory, sources);
 
         var fullResponse = new StringBuilder();
-        var tokensUsed = 0;
 
         await foreach (var chunk in chatService.GetStreamingChatMessageContentsAsync(chatHistory, cancellationToken: ct))
         {
             if (chunk.Content is not null)
             {
                 fullResponse.Append(chunk.Content);
-                tokensUsed++;
                 yield return new ChatStreamChunk(chunk.Content, false, sessionId);
             }
         }
 
         // Store assistant message
-        await _memory.AddMessageAsync(sessionId, ChatMessageRole.Assistant, fullResponse.ToString(), tokensUsed, ct);
+        var fullResponseText = fullResponse.ToString();
+        var tokensUsed = fullResponseText.Length / 4;
+        await _memory.AddMessageAsync(sessionId, ChatMessageRole.Assistant, fullResponseText, tokensUsed, ct);
 
         // Final chunk with sources
         yield return new ChatStreamChunk(string.Empty, true, sessionId, sources, tokensUsed);
