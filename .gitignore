@@ -25,6 +25,14 @@ Thumbs.db
 *.local
 appsettings.Development.json
 
+# Uploads
+uploads/
+**/uploads/
+
 # Logs
 logs/
 *.log
+
+# Node
+node_modules/
+package-lock.json
