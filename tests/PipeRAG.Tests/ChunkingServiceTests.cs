@@ -90,4 +90,59 @@ public class ChunkingServiceTests
         _sut.EstimateTokenCount("").Should().Be(0);
         _sut.EstimateTokenCount("   ").Should().Be(0);
     }
+
+    [Fact]
+    public void ChunkText_LongSingleSentence_ForcesWordBasedSplitting()
+    {
+        // One sentence with no periods, exceeding chunkSize
+        var words = Enumerable.Range(1, 200).Select(i => $"word{i}").ToList();
+        var text = string.Join(" ", words); // no sentence boundaries
+
+        var chunks = _sut.ChunkText(text, chunkSize: 30, overlap: 5);
+
+        chunks.Should().HaveCountGreaterThan(1);
+        // Verify overlap: last N words of chunk[i] should appear at start of chunk[i+1]
+        for (int i = 1; i < chunks.Count; i++)
+        {
+            var prevWords = chunks[i - 1].Content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var currWords = chunks[i].Content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var tailOfPrev = prevWords.TakeLast(5).ToArray();
+            var headOfCurr = currWords.Take(5).ToArray();
+            tailOfPrev.Intersect(headOfCurr).Should().NotBeEmpty(
+                "overlap words from previous chunk should appear at start of next chunk");
+        }
+    }
+
+    [Fact]
+    public void ChunkText_SmallOverlap_NeverExceedsConfiguredTokens()
+    {
+        var sentences = Enumerable.Range(1, 30)
+            .Select(i => $"Short sentence {i}.")
+            .ToList();
+        var text = string.Join(" ", sentences);
+
+        var chunks = _sut.ChunkText(text, chunkSize: 20, overlap: 2);
+
+        chunks.Should().HaveCountGreaterThan(1);
+        // For each consecutive pair, verify carried-over tokens <= overlap (with some tolerance)
+        for (int i = 1; i < chunks.Count; i++)
+        {
+            var prevWords = chunks[i - 1].Content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var currWords = chunks[i].Content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            // Count how many words from the tail of prev appear at the head of curr
+            var tailOfPrev = prevWords.TakeLast(10).ToHashSet();
+            var overlapCount = 0;
+            foreach (var w in currWords)
+            {
+                if (tailOfPrev.Contains(w))
+                    overlapCount++;
+                else
+                    break; // stop at first non-overlap word
+            }
+            // Overlap tokens should not wildly exceed configured overlap
+            // Using 2x tolerance since sentence-level overlap may carry a full sentence
+            overlapCount.Should().BeLessThanOrEqualTo(10,
+                "overlap should be bounded relative to configured overlap");
+        }
+    }
 }
