@@ -25,6 +25,10 @@ Thumbs.db
 *.local
 appsettings.Development.json
 
+# Uploads
+uploads/
+**/uploads/
+
 # Logs
 logs/
 *.log
