@@ -34,6 +34,12 @@ PipeRagDbContext.EmbeddingDimension = embeddingDimension;
 // Auth service
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Document services
+builder.Services.AddSingleton<IFileStorageService>(new LocalFileStorageService(
+    Path.Combine(builder.Environment.ContentRootPath, "uploads")));
+builder.Services.AddScoped<IDocumentProcessor, DocumentProcessor>();
+builder.Services.AddScoped<IChunkingService, ChunkingService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtSecret = jwtSection["Secret"];

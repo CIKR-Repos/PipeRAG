@@ -14,6 +14,7 @@ public class Document
     public long FileSizeBytes { get; set; }
     public string StoragePath { get; set; } = string.Empty;
     public DocumentStatus Status { get; set; } = DocumentStatus.Uploaded;
+    public int TokenCount { get; set; }
     public int ChunkCount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ProcessedAt { get; set; }

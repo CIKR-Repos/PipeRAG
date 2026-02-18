@@ -20,8 +20,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="8.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\PipeRAG.Api\PipeRAG.Api.csproj" />
     <ProjectReference Include="..\..\src\PipeRAG.Core\PipeRAG.Core.csproj" />
+    <ProjectReference Include="..\..\src\PipeRAG.Infrastructure\PipeRAG.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
