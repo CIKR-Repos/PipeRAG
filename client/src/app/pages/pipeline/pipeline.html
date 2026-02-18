@@ -1,0 +1,466 @@
+<app-navbar />
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Pipeline Builder</h1>
+      <p class="text-sm text-gray-500 mt-1">Configure your RAG pipeline step by step</p>
+    </div>
+    <div class="flex items-center gap-3">
+      @if (svc.hasUnsavedChanges()) {
+        <span class="text-xs text-amber-600 font-medium">● Unsaved changes</span>
+      }
+      <button (click)="save()"
+              [disabled]="svc.isSaving() || !svc.hasUnsavedChanges()"
+              class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-indigo-600 text-white hover:bg-indigo-700">
+        {{ svc.isSaving() ? 'Saving...' : 'Save Pipeline' }}
+      </button>
+    </div>
+  </div>
+
+  @if (svc.saveError()) {
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+      {{ svc.saveError() }}
+    </div>
+  }
+
+  @if (svc.isLoading()) {
+    <div class="text-center py-20 text-gray-400 text-lg">Loading pipeline…</div>
+  } @else {
+    <!-- Wizard Step Indicator -->
+    <div class="mb-8">
+      <div class="flex items-center gap-1">
+        @for (step of svc.steps; track step; let i = $index) {
+          <button (click)="svc.goToStep(step)"
+                  class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  [class]="i === svc.currentStepIndex()
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : i < svc.currentStepIndex()
+                      ? 'text-green-600 hover:bg-green-50'
+                      : 'text-gray-400 hover:bg-gray-50'">
+            <span class="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                  [class]="i === svc.currentStepIndex()
+                    ? 'bg-indigo-600 text-white'
+                    : i < svc.currentStepIndex()
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-500'">
+              @if (i < svc.currentStepIndex()) { ✓ } @else { {{ i + 1 }} }
+            </span>
+            <span class="hidden sm:inline capitalize">{{ step }}</span>
+          </button>
+          @if (i < svc.steps.length - 1) {
+            <div class="flex-1 h-0.5 mx-1"
+                 [class]="i < svc.currentStepIndex() ? 'bg-green-400' : 'bg-gray-200'"></div>
+          }
+        }
+      </div>
+      <!-- Progress bar -->
+      <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+             [style.width.%]="svc.progressPercent()"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: Pipeline Flow (visual blocks) -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-2xl border border-gray-200 p-4">
+          <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Pipeline Flow</h2>
+          <div cdkDropList [cdkDropListData]="svc.blocks()" (cdkDropListDropped)="onDrop($event)"
+               class="flex flex-col gap-2">
+            @for (block of svc.blocks(); track block.id) {
+              <div cdkDrag
+                   (click)="svc.selectBlock(block.id); svc.goToStep(block.type)"
+                   class="group relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md"
+                   [class]="blockClass(block)">
+                <div cdkDragHandle class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500">
+                  ⠿
+                </div>
+                <div class="flex items-center justify-center w-9 h-9 rounded-lg text-lg" [class]="blockIconBg(block)">
+                  {{ block.icon }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-gray-800">{{ block.label }}</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider" [class]="blockTypeBadge(block)">
+                      {{ block.type }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-500 truncate mt-0.5">{{ blockSummary(block) }}</p>
+                </div>
+                <div *cdkDragPlaceholder class="h-14 rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50"></div>
+              </div>
+              <!-- Connector arrow between blocks -->
+              @if (!$last) {
+                <div class="flex justify-center -my-1">
+                  <svg width="16" height="20" viewBox="0 0 16 20" class="text-gray-300">
+                    <path d="M8 0 L8 14 M4 10 L8 16 L12 10" stroke="currentColor" stroke-width="2" fill="none"/>
+                  </svg>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Pipeline Status -->
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-gray-500">Status:</span>
+                @switch (svc.pipelineStatus()) {
+                  @case ('idle') { <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Idle</span> }
+                  @case ('running') { <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 animate-pulse">Running…</span> }
+                  @case ('completed') { <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Completed</span> }
+                  @case ('failed') { <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Failed</span> }
+                }
+              </div>
+              <button (click)="runPipeline()"
+                      [disabled]="svc.isRunning()"
+                      class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 transition-all duration-200">
+                {{ svc.isRunning() ? 'Running…' : '▶ Run' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Step Configuration -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+          @switch (svc.currentStep()) {
+            <!-- SOURCE STEP -->
+            @case ('source') {
+              <h2 class="text-lg font-bold text-gray-900 mb-1">📄 Data Source</h2>
+              <p class="text-sm text-gray-500 mb-6">Upload documents or connect a data source for your chatbot.</p>
+              @if (svc.documents().length > 0) {
+                <div class="space-y-2 mb-6">
+                  @for (doc of svc.documents(); track doc.id) {
+                    <div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-50 border border-gray-200">
+                      <span class="text-lg">
+                        @switch (doc.fileType) {
+                          @case ('application/pdf') { 📕 }
+                          @case ('text/plain') { 📝 }
+                          @case ('text/markdown') { 📝 }
+                          @default { 📄 }
+                        }
+                      </span>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-800 truncate">{{ doc.fileName }}</p>
+                        <p class="text-xs text-gray-400">{{ (doc.fileSize / 1024).toFixed(1) }} KB</p>
+                      </div>
+                      <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                            [class]="doc.status === 'Processed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
+                        {{ doc.status }}
+                      </span>
+                    </div>
+                  }
+                </div>
+                <p class="text-sm text-gray-500">{{ svc.documents().length }} document(s) loaded. Configure chunking in the next step.</p>
+              } @else {
+                <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
+                  <div class="text-4xl mb-3">📁</div>
+                  <p class="text-gray-500 mb-2">No documents uploaded yet</p>
+                  <p class="text-xs text-gray-400">Upload documents from the project page first</p>
+                </div>
+              }
+              @for (block of svc.blocks(); track block.id) {
+                @if (block.type === 'source') {
+                  <div class="mt-6 space-y-4">
+                    <label class="block">
+                      <span class="text-sm font-medium text-gray-700">Source Type</span>
+                      <select [value]="block.config['sourceType']"
+                              (change)="onConfigChange(block.id, 'sourceType', $event)"
+                              class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="file-upload">File Upload</option>
+                        <option value="url">URL Crawl</option>
+                        <option value="google-drive">Google Drive</option>
+                      </select>
+                    </label>
+                  </div>
+                }
+              }
+            }
+
+            <!-- CHUNKING STEP -->
+            @case ('chunking') {
+              <h2 class="text-lg font-bold text-gray-900 mb-1">✂️ Chunking</h2>
+              <p class="text-sm text-gray-500 mb-6">Configure how documents are split into smaller chunks for processing.</p>
+              @for (block of svc.blocks(); track block.id) {
+                @if (block.type === 'chunking') {
+                  <div class="space-y-6">
+                    <label class="block">
+                      <span class="text-sm font-medium text-gray-700">Strategy</span>
+                      <select [value]="block.config['strategy']"
+                              (change)="onConfigChange(block.id, 'strategy', $event)"
+                              class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="recursive">Recursive Character</option>
+                        <option value="sentence">Sentence</option>
+                        <option value="token">Token-based</option>
+                        <option value="markdown">Markdown Header</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Chunk Size</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['chunkSize'] }} tokens</span>
+                      </div>
+                      <input type="range" [value]="block.config['chunkSize']"
+                             (input)="onConfigChangeNum(block.id, 'chunkSize', $event)"
+                             min="128" max="2048" step="64"
+                             class="mt-2 w-full accent-indigo-600" />
+                      <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>128</span><span>2048</span>
+                      </div>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Overlap</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['chunkOverlap'] }} tokens</span>
+                      </div>
+                      <input type="range" [value]="block.config['chunkOverlap']"
+                             (input)="onConfigChangeNum(block.id, 'chunkOverlap', $event)"
+                             min="0" max="200" step="10"
+                             class="mt-2 w-full accent-indigo-600" />
+                      <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>0</span><span>200</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <!-- Chunk Preview -->
+                  @if (svc.chunkPreview(); as preview) {
+                    <div class="mt-8 pt-6 border-t border-gray-100">
+                      <h3 class="text-sm font-semibold text-gray-700 mb-3">Chunk Preview ({{ preview.totalCount }} total)</h3>
+                      <div class="space-y-2">
+                        @for (chunk of preview.chunks; track chunk.index) {
+                          <div class="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600">
+                            <div class="flex justify-between mb-1">
+                              <span class="font-semibold text-gray-700">Chunk {{ chunk.index + 1 }}</span>
+                              <span class="text-gray-400">{{ chunk.tokenCount }} tokens</span>
+                            </div>
+                            <p class="line-clamp-3">{{ chunk.content }}</p>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              }
+            }
+
+            <!-- EMBEDDING STEP -->
+            @case ('embedding') {
+              <h2 class="text-lg font-bold text-gray-900 mb-1">🧮 Embedding</h2>
+              <p class="text-sm text-gray-500 mb-6">Choose the embedding model that converts text into vector representations.</p>
+              @for (block of svc.blocks(); track block.id) {
+                @if (block.type === 'embedding') {
+                  <div class="space-y-6">
+                    <label class="block">
+                      <span class="text-sm font-medium text-gray-700">Embedding Model</span>
+                      <select [value]="block.config['model']"
+                              (change)="onConfigChange(block.id, 'model', $event)"
+                              class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="text-embedding-3-small">OpenAI text-embedding-3-small (1536d)</option>
+                        <option value="text-embedding-3-large">OpenAI text-embedding-3-large (3072d)</option>
+                        <option value="embed-v4">Cohere embed-v4 (1024d)</option>
+                        <option value="bge-m3">Local bge-m3 (1024d)</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Dimensions</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['dimensions'] }}</span>
+                      </div>
+                      <input type="number" [value]="block.config['dimensions']"
+                             (input)="onConfigChangeNum(block.id, 'dimensions', $event)"
+                             min="256" max="3072"
+                             class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                    </label>
+                    <!-- Model info cards -->
+                    <div class="grid grid-cols-2 gap-3">
+                      <div class="px-4 py-3 rounded-lg bg-indigo-50 border border-indigo-100">
+                        <p class="text-xs font-semibold text-indigo-700">Quality</p>
+                        <p class="text-lg font-bold text-indigo-900">
+                          @switch (block.config['model']) {
+                            @case ('text-embedding-3-large') { ★★★ }
+                            @case ('embed-v4') { ★★★ }
+                            @case ('text-embedding-3-small') { ★★☆ }
+                            @default { ★★☆ }
+                          }
+                        </p>
+                      </div>
+                      <div class="px-4 py-3 rounded-lg bg-green-50 border border-green-100">
+                        <p class="text-xs font-semibold text-green-700">Cost</p>
+                        <p class="text-lg font-bold text-green-900">
+                          @switch (block.config['model']) {
+                            @case ('text-embedding-3-large') { $$ }
+                            @case ('embed-v4') { $ }
+                            @case ('bge-m3') { Free }
+                            @default { $ }
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+            }
+
+            <!-- RETRIEVAL STEP -->
+            @case ('retrieval') {
+              <h2 class="text-lg font-bold text-gray-900 mb-1">🔍 Retrieval</h2>
+              <p class="text-sm text-gray-500 mb-6">Configure how relevant chunks are retrieved for each query.</p>
+              @for (block of svc.blocks(); track block.id) {
+                @if (block.type === 'retrieval') {
+                  <div class="space-y-6">
+                    <label class="block">
+                      <span class="text-sm font-medium text-gray-700">Strategy</span>
+                      <select [value]="block.config['strategy']"
+                              (change)="onConfigChange(block.id, 'strategy', $event)"
+                              class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="semantic">Semantic (Vector)</option>
+                        <option value="hybrid">Hybrid (Semantic + Keyword) — Pro</option>
+                        <option value="mmr">MMR (Max Marginal Relevance)</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Top-K Results</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['topK'] }}</span>
+                      </div>
+                      <input type="range" [value]="block.config['topK']"
+                             (input)="onConfigChangeNum(block.id, 'topK', $event)"
+                             min="1" max="20" step="1"
+                             class="mt-2 w-full accent-indigo-600" />
+                      <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>1</span><span>20</span>
+                      </div>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Score Threshold</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['scoreThreshold'] }}</span>
+                      </div>
+                      <input type="range" [value]="block.config['scoreThreshold']"
+                             (input)="onConfigChangeFloat(block.id, 'scoreThreshold', $event)"
+                             min="0" max="1" step="0.05"
+                             class="mt-2 w-full accent-indigo-600" />
+                      <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>0.0</span><span>1.0</span>
+                      </div>
+                    </label>
+                  </div>
+                }
+              }
+            }
+
+            <!-- GENERATION STEP -->
+            @case ('generation') {
+              <h2 class="text-lg font-bold text-gray-900 mb-1">🤖 Generation</h2>
+              <p class="text-sm text-gray-500 mb-6">Choose the LLM and configure how responses are generated.</p>
+              @for (block of svc.blocks(); track block.id) {
+                @if (block.type === 'generation') {
+                  <div class="space-y-6">
+                    <label class="block">
+                      <span class="text-sm font-medium text-gray-700">LLM Model</span>
+                      <select [value]="block.config['model']"
+                              (change)="onConfigChange(block.id, 'model', $event)"
+                              class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="gpt-4.1">GPT-4.1</option>
+                        <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="llama-3.3-70b">Llama 3.3 70B (Groq)</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Temperature</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['temperature'] }}</span>
+                      </div>
+                      <input type="range" [value]="block.config['temperature']"
+                             (input)="onConfigChangeFloat(block.id, 'temperature', $event)"
+                             min="0" max="2" step="0.1"
+                             class="mt-2 w-full accent-indigo-600" />
+                      <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>0 (Precise)</span><span>2 (Creative)</span>
+                      </div>
+                    </label>
+                    <label class="block">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Max Tokens</span>
+                        <span class="text-sm font-mono text-indigo-600">{{ block.config['maxTokens'] }}</span>
+                      </div>
+                      <input type="range" [value]="block.config['maxTokens']"
+                             (input)="onConfigChangeNum(block.id, 'maxTokens', $event)"
+                             min="256" max="8192" step="256"
+                             class="mt-2 w-full accent-indigo-600" />
+                      <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>256</span><span>8192</span>
+                      </div>
+                    </label>
+                    <label class="block">
+                      <span class="text-sm font-medium text-gray-700">System Prompt</span>
+                      <textarea [value]="block.config['systemPrompt']"
+                                (input)="onConfigChange(block.id, 'systemPrompt', $event)"
+                                rows="4"
+                                class="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 resize-none"></textarea>
+                    </label>
+                  </div>
+                }
+              }
+            }
+
+            <!-- REVIEW STEP -->
+            @case ('review') {
+              <h2 class="text-lg font-bold text-gray-900 mb-1">📋 Review & Run</h2>
+              <p class="text-sm text-gray-500 mb-6">Review your pipeline configuration before running.</p>
+              <div class="space-y-4">
+                @for (block of svc.blocks(); track block.id) {
+                  <div class="flex items-start gap-3 px-4 py-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <span class="text-xl mt-0.5">{{ block.icon }}</span>
+                    <div class="flex-1">
+                      <h3 class="text-sm font-semibold text-gray-800">{{ block.label }}</h3>
+                      <p class="text-xs text-gray-500 mt-1">{{ blockSummary(block) }}</p>
+                    </div>
+                    <button (click)="svc.goToStep(block.type)"
+                            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                      Edit
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="mt-8 flex gap-3">
+                <button (click)="save()"
+                        [disabled]="svc.isSaving()"
+                        class="flex-1 px-5 py-3 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 transition-all duration-200">
+                  {{ svc.isSaving() ? 'Saving…' : 'Save Pipeline' }}
+                </button>
+                <button (click)="runPipeline()"
+                        [disabled]="svc.isRunning()"
+                        class="flex-1 px-5 py-3 rounded-xl text-sm font-bold bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 transition-all duration-200">
+                  {{ svc.isRunning() ? 'Running…' : '▶ Run Pipeline' }}
+                </button>
+              </div>
+            }
+          }
+
+          <!-- Navigation buttons -->
+          @if (svc.currentStep() !== 'review') {
+            <div class="flex justify-between mt-8 pt-6 border-t border-gray-100">
+              <button (click)="svc.prevStep()"
+                      [disabled]="svc.currentStepIndex() === 0"
+                      class="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-30 transition-all duration-200">
+                ← Previous
+              </button>
+              <button (click)="svc.nextStep()"
+                      class="px-5 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-all duration-200">
+                Next →
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
