@@ -10,7 +10,6 @@ public class TierEnforcementMiddleware
 
     private static readonly HashSet<string> QueryPaths = ["/api/chat"];
     private static readonly HashSet<string> DocumentPaths = ["/api/documents"];
-    private static readonly HashSet<string> ProjectPaths = ["/api/projects"];
 
     public TierEnforcementMiddleware(RequestDelegate next, ILogger<TierEnforcementMiddleware> logger)
     {
@@ -36,8 +35,8 @@ public class TierEnforcementMiddleware
             return;
         }
 
-        // Check query limits
-        if (QueryPaths.Any(p => path.StartsWith(p)))
+        // Check query limits (paths containing /chat)
+        if (path.Contains("/chat"))
         {
             if (!await usageService.CanPerformQueryAsync(userId))
             {
@@ -47,8 +46,8 @@ public class TierEnforcementMiddleware
             }
         }
 
-        // Check document limits
-        if (DocumentPaths.Any(p => path.StartsWith(p)))
+        // Check document limits (paths ending with /documents)
+        if (path.EndsWith("/documents"))
         {
             if (!await usageService.CanCreateDocumentAsync(userId))
             {
@@ -58,8 +57,8 @@ public class TierEnforcementMiddleware
             }
         }
 
-        // Check project limits
-        if (ProjectPaths.Any(p => path.StartsWith(p)))
+        // Check project limits (only POST to /api/projects exactly)
+        if (path == "/api/projects")
         {
             if (!await usageService.CanCreateProjectAsync(userId))
             {
