@@ -13,7 +13,8 @@ public class PipelineRun
     public int DocumentsProcessed { get; set; }
     public int ChunksCreated { get; set; }
     public string? ErrorMessage { get; set; }
-    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime QueuedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 
     // Navigation

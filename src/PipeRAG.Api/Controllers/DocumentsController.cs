@@ -65,7 +65,10 @@ public class DocumentsController : ControllerBase
         if (project is null)
             return NotFound(new { error = "Project not found." });
 
-        var user = await _db.Users.FindAsync([GetUserId()], ct);
+        var uid = GetUserId();
+        if (uid is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync([uid.Value], ct);
         var tier = user?.Tier ?? UserTier.Free;
         var maxSize = MaxFileSizeByTier[tier];
 
@@ -239,17 +242,20 @@ public class DocumentsController : ControllerBase
 
     private async Task<Project?> GetAuthorizedProjectAsync(Guid projectId, CancellationToken ct)
     {
+        var userId = GetUserId();
+        if (userId is null) return null;
+
         var project = await _db.Projects.FindAsync([projectId], ct);
-        if (project is null || project.OwnerId != GetUserId())
+        if (project is null || project.OwnerId != userId.Value)
             return null;
         return project;
     }
 
-    private Guid GetUserId()
+    private Guid? GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst("sub")?.Value;
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 
     private static DocumentResponse ToResponse(Document doc) => new(

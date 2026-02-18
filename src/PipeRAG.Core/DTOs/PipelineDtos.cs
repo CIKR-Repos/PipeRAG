@@ -43,7 +43,8 @@ public record PipelineRunResponse(
     string Status,
     int DocumentsProcessed,
     int ChunksGenerated,
-    DateTime StartedAt,
+    DateTime QueuedAt,
+    DateTime? StartedAt,
     DateTime? CompletedAt,
     string? ErrorMessage);
 

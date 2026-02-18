@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel.Embeddings;
@@ -13,6 +14,7 @@ public class EmbeddingService : IEmbeddingService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<EmbeddingService> _logger;
+    private readonly ConcurrentDictionary<string, Kernel> _kernelCache = new();
 
     public EmbeddingService(IConfiguration config, ILogger<EmbeddingService> logger)
     {
@@ -23,7 +25,7 @@ public class EmbeddingService : IEmbeddingService
     /// <inheritdoc />
     public async Task<float[]> GenerateEmbeddingAsync(string text, string modelId, CancellationToken ct = default)
     {
-        var kernel = BuildKernel(modelId);
+        var kernel = _kernelCache.GetOrAdd(modelId, BuildKernel);
         var embeddingService = kernel.GetRequiredService<ITextEmbeddingGenerationService>();
         var result = await embeddingService.GenerateEmbeddingAsync(text, kernel, ct);
         return result.ToArray();
@@ -33,7 +35,7 @@ public class EmbeddingService : IEmbeddingService
     public async Task<IReadOnlyList<float[]>> GenerateEmbeddingsBatchAsync(
         IReadOnlyList<string> texts, string modelId, CancellationToken ct = default)
     {
-        var kernel = BuildKernel(modelId);
+        var kernel = _kernelCache.GetOrAdd(modelId, BuildKernel);
         var embeddingService = kernel.GetRequiredService<ITextEmbeddingGenerationService>();
         var results = await embeddingService.GenerateEmbeddingsAsync(texts.ToList(), kernel, ct);
         return results.Select(r => r.ToArray()).ToArray();

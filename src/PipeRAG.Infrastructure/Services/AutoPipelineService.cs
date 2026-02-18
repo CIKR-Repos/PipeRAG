@@ -15,6 +15,8 @@ namespace PipeRAG.Infrastructure.Services;
 /// </summary>
 public class AutoPipelineService : IAutoPipelineService
 {
+    private static readonly JsonSerializerOptions CamelCaseJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<AutoPipelineService> _logger;
     private readonly PipelineRunChannel _channel;
@@ -43,7 +45,7 @@ public class AutoPipelineService : IAutoPipelineService
             Id = Guid.NewGuid(),
             PipelineId = pipelineId,
             Status = PipelineRunStatus.Queued,
-            StartedAt = DateTime.UtcNow
+            QueuedAt = DateTime.UtcNow
         };
 
         db.PipelineRuns.Add(run);
@@ -70,10 +72,11 @@ public class AutoPipelineService : IAutoPipelineService
         try
         {
             run.Status = PipelineRunStatus.Running;
+            run.StartedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
 
             var pipeline = run.Pipeline;
-            var config = JsonSerializer.Deserialize<PipelineConfigDto>(pipeline.ConfigJson)
+            var config = JsonSerializer.Deserialize<PipelineConfigDto>(pipeline.ConfigJson, CamelCaseJsonOptions)
                 ?? new PipelineConfigDto();
 
             // Get project owner's tier for model selection

@@ -44,6 +44,8 @@ public class PipelineController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PipelineResponse>> Create(Guid projectId, [FromBody] PipelineRequest request, CancellationToken ct)
     {
+        if (GetUserId() is null) return Unauthorized();
+
         var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
@@ -71,6 +73,8 @@ public class PipelineController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<PipelineResponse>>> List(Guid projectId, CancellationToken ct)
     {
+        if (GetUserId() is null) return Unauthorized();
+
         var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
@@ -106,6 +110,8 @@ public class PipelineController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PipelineResponse>> Get(Guid projectId, Guid id, CancellationToken ct)
     {
+        if (GetUserId() is null) return Unauthorized();
+
         var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
@@ -121,6 +127,8 @@ public class PipelineController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<PipelineResponse>> Update(Guid projectId, Guid id, [FromBody] PipelineRequest request, CancellationToken ct)
     {
+        if (GetUserId() is null) return Unauthorized();
+
         var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
@@ -143,6 +151,8 @@ public class PipelineController : ControllerBase
     [HttpPost("{pipelineId:guid}/run")]
     public async Task<ActionResult<PipelineRunResponse>> TriggerRun(Guid projectId, Guid pipelineId, CancellationToken ct)
     {
+        if (GetUserId() is null) return Unauthorized();
+
         var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
@@ -161,6 +171,8 @@ public class PipelineController : ControllerBase
     [HttpGet("{pipelineId:guid}/runs")]
     public async Task<ActionResult<List<PipelineRunResponse>>> ListRuns(Guid projectId, Guid pipelineId, CancellationToken ct)
     {
+        if (GetUserId() is null) return Unauthorized();
+
         var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
@@ -169,7 +181,7 @@ public class PipelineController : ControllerBase
 
         var runs = await _db.PipelineRuns
             .Where(r => r.PipelineId == pipelineId)
-            .OrderByDescending(r => r.StartedAt)
+            .OrderByDescending(r => r.QueuedAt)
             .ToListAsync(ct);
 
         return Ok(runs.Select(ToRunResponse).ToList());
@@ -181,7 +193,10 @@ public class PipelineController : ControllerBase
     [HttpGet("/api/models")]
     public async Task<ActionResult<ModelSelectionResponse>> GetModels(CancellationToken ct)
     {
-        var user = await _db.Users.FindAsync([GetUserId()], ct);
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync([userId.Value], ct);
         if (user is null) return Unauthorized();
 
         return Ok(_modelRouter.GetModelsForTier(user.Tier));
@@ -189,17 +204,20 @@ public class PipelineController : ControllerBase
 
     private async Task<Project?> GetAuthorizedProjectAsync(Guid projectId, CancellationToken ct)
     {
+        var userId = GetUserId();
+        if (userId is null) return null;
+
         var project = await _db.Projects.FindAsync([projectId], ct);
-        if (project is null || project.OwnerId != GetUserId())
+        if (project is null || project.OwnerId != userId.Value)
             return null;
         return project;
     }
 
-    private Guid GetUserId()
+    private Guid? GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst("sub")?.Value;
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 
     private static PipelineResponse ToResponse(Pipeline p)
@@ -209,5 +227,5 @@ public class PipelineController : ControllerBase
     }
 
     private static PipelineRunResponse ToRunResponse(PipelineRun r) =>
-        new(r.Id, r.PipelineId, r.Status.ToString(), r.DocumentsProcessed, r.ChunksCreated, r.StartedAt, r.CompletedAt, r.ErrorMessage);
+        new(r.Id, r.PipelineId, r.Status.ToString(), r.DocumentsProcessed, r.ChunksCreated, r.QueuedAt, r.StartedAt, r.CompletedAt, r.ErrorMessage);
 }

@@ -363,7 +363,10 @@ namespace PipeRAG.Infrastructure.Data.Migrations
                     b.Property<Guid>("PipelineId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("StartedAt")
+                    b.Property<DateTime>("QueuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
