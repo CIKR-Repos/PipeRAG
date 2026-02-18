@@ -65,15 +65,9 @@ public class QueryEngineTests
         result.Should().HaveCount(1536);
     }
 
-    [Fact]
-    public async Task Memory_AddMessage_IsCalledDuringQuery()
-    {
-        // Verify the memory service integration contract
-        var sessionId = Guid.NewGuid();
-        await _memory.Object.AddMessageAsync(sessionId, ChatMessageRole.User, "test query");
-
-        _memory.Verify(m => m.AddMessageAsync(sessionId, ChatMessageRole.User, "test query", null, default), Times.Once);
-    }
+    // Note: Memory_AddMessage test removed — it was testing mock setup, not real behavior.
+    // Integration testing of AddMessageAsync requires a full QueryEngineService with SK kernel,
+    // which needs an OpenAI API key. Covered by ChatController integration tests instead.
 
     [Fact]
     public async Task Memory_GetConversationWindow_ReturnsEmptyForNewSession()

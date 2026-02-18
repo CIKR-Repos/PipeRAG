@@ -107,9 +107,10 @@ public class ConversationMemoryService : IConversationMemoryService
         {
             // Create a summary message to prepend
             var summaryText = BuildSummary(olderMessages);
+            // Synthetic summary message (not persisted) — uses new Guid to avoid entity conflicts
             var summaryMessage = new ChatMessage
             {
-                Id = Guid.Empty,
+                Id = Guid.NewGuid(),
                 SessionId = sessionId,
                 Role = ChatMessageRole.System,
                 Content = summaryText,

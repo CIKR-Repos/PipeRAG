@@ -114,5 +114,41 @@ public class ChatControllerTests : IDisposable
         result.Should().BeOfType<NoContentResult>();
     }
 
+    [Fact]
+    public async Task GetMessages_ReturnsOk_WithMessages()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.ChatSessions.Add(new ChatSession { Id = sessionId, ProjectId = _projectId, UserId = _userId, Title = "Test" });
+        await _db.SaveChangesAsync();
+
+        var msg1 = new ChatMessage { Id = Guid.NewGuid(), SessionId = sessionId, Role = ChatMessageRole.User, Content = "Hello", TokenCount = null, CreatedAt = DateTime.UtcNow };
+        var msg2 = new ChatMessage { Id = Guid.NewGuid(), SessionId = sessionId, Role = ChatMessageRole.Assistant, Content = "Hi there!", TokenCount = 10, CreatedAt = DateTime.UtcNow.AddSeconds(1) };
+
+        _memory.Setup(m => m.GetAllMessagesAsync(sessionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([msg1, msg2]);
+
+        var result = await _controller.GetMessages(_projectId, sessionId, CancellationToken.None);
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var messages = ok.Value.Should().BeAssignableTo<List<ChatMessageResponse>>().Subject;
+        messages.Should().HaveCount(2);
+        messages[0].Role.Should().Be("User");
+        messages[0].Content.Should().Be("Hello");
+        messages[1].Role.Should().Be("Assistant");
+        messages[1].TokensUsed.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task GetMessages_ReturnsNotFound_ForOtherUsersSession()
+    {
+        var otherUserId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+        _db.ChatSessions.Add(new ChatSession { Id = sessionId, ProjectId = _projectId, UserId = otherUserId, Title = "Other" });
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetMessages(_projectId, sessionId, CancellationToken.None);
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
     public void Dispose() => _db.Dispose();
 }

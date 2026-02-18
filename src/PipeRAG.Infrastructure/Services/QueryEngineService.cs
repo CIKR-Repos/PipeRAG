@@ -1,3 +1,7 @@
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Collections.Concurrent;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -24,6 +28,7 @@ public class QueryEngineService : IQueryEngineService
     private readonly IConversationMemoryService _memory;
     private readonly IConfiguration _config;
     private readonly ILogger<QueryEngineService> _logger;
+    private readonly ConcurrentDictionary<string, Kernel> _chatKernelCache = new();
 
     public QueryEngineService(
         PipeRagDbContext db,
@@ -60,10 +65,10 @@ public class QueryEngineService : IQueryEngineService
         var kernel = BuildChatKernel(models.ChatModel);
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
 
-        var chatHistory = BuildChatHistory(conversationHistory, sources, userMessage);
+        var chatHistory = BuildChatHistory(conversationHistory, sources);
         var result = await chatService.GetChatMessageContentAsync(chatHistory, cancellationToken: ct);
         var responseText = result.Content ?? string.Empty;
-        var tokensUsed = responseText.Length / 4; // Rough estimate
+        var tokensUsed = responseText.Length / 4;
 
         // Store assistant message
         await _memory.AddMessageAsync(sessionId, ChatMessageRole.Assistant, responseText, tokensUsed, ct);
@@ -89,23 +94,23 @@ public class QueryEngineService : IQueryEngineService
         var conversationHistory = await _memory.GetConversationWindowAsync(sessionId, ct: ct);
         var kernel = BuildChatKernel(models.ChatModel);
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
-        var chatHistory = BuildChatHistory(conversationHistory, sources, userMessage);
+        var chatHistory = BuildChatHistory(conversationHistory, sources);
 
         var fullResponse = new StringBuilder();
-        var tokensUsed = 0;
 
         await foreach (var chunk in chatService.GetStreamingChatMessageContentsAsync(chatHistory, cancellationToken: ct))
         {
             if (chunk.Content is not null)
             {
                 fullResponse.Append(chunk.Content);
-                tokensUsed++;
                 yield return new ChatStreamChunk(chunk.Content, false, sessionId);
             }
         }
 
         // Store assistant message
-        await _memory.AddMessageAsync(sessionId, ChatMessageRole.Assistant, fullResponse.ToString(), tokensUsed, ct);
+        var fullResponseText = fullResponse.ToString();
+        var tokensUsed = fullResponseText.Length / 4;
+        await _memory.AddMessageAsync(sessionId, ChatMessageRole.Assistant, fullResponseText, tokensUsed, ct);
 
         // Final chunk with sources
         yield return new ChatStreamChunk(string.Empty, true, sessionId, sources, tokensUsed);
@@ -116,7 +121,7 @@ public class QueryEngineService : IQueryEngineService
         string strategy, int topK, double scoreThreshold, CancellationToken ct)
     {
         var queryEmbedding = await _embeddingService.GenerateEmbeddingAsync(query, embeddingModel, ct);
-        var embeddingStr = $"[{string.Join(",", queryEmbedding)}]";
+        var embeddingStr = "[" + string.Join(",", queryEmbedding.Select(v => v.ToString(CultureInfo.InvariantCulture))) + "]";
 
         // Use raw SQL for pgvector cosine distance search
         var sql = @"
@@ -135,8 +140,13 @@ public class QueryEngineService : IQueryEngineService
 
         try
         {
-            using var command = _db.Database.GetDbConnection().CreateCommand();
-            command.CommandText = sql;
+            var conn = _db.Database.GetDbConnection();
+            var wasOpen = conn.State == System.Data.ConnectionState.Open;
+            if (!wasOpen) await conn.OpenAsync(ct);
+            try
+            {
+                using var command = conn.CreateCommand();
+                command.CommandText = sql;
 
             var pEmbedding = command.CreateParameter();
             pEmbedding.ParameterName = "@p0";
@@ -158,7 +168,6 @@ public class QueryEngineService : IQueryEngineService
             pLimit.Value = topK;
             command.Parameters.Add(pLimit);
 
-            await _db.Database.OpenConnectionAsync(ct);
             using var reader = await command.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
@@ -168,6 +177,11 @@ public class QueryEngineService : IQueryEngineService
                     ChunkContent: reader.GetString(2),
                     Score: 1.0 - reader.GetDouble(5)
                 ));
+                }
+            }
+            finally
+            {
+                if (!wasOpen) await conn.CloseAsync();
             }
         }
         catch (Exception ex)
@@ -196,7 +210,7 @@ public class QueryEngineService : IQueryEngineService
         return sources;
     }
 
-    private ChatHistory BuildChatHistory(List<Core.Entities.ChatMessage> conversation, List<SourceReference> sources, string currentQuery)
+    private ChatHistory BuildChatHistory(List<Core.Entities.ChatMessage> conversation, List<SourceReference> sources)
     {
         var history = new ChatHistory();
 
@@ -225,11 +239,14 @@ public class QueryEngineService : IQueryEngineService
 
     private Kernel BuildChatKernel(string modelId)
     {
-        var apiKey = _config["OpenAI:ApiKey"]
-            ?? throw new InvalidOperationException("OpenAI:ApiKey not configured.");
+        return _chatKernelCache.GetOrAdd(modelId, id =>
+        {
+            var apiKey = _config["OpenAI:ApiKey"]
+                ?? throw new InvalidOperationException("OpenAI:ApiKey not configured.");
 
-        var builder = Kernel.CreateBuilder();
-        builder.AddOpenAIChatCompletion(modelId, apiKey);
-        return builder.Build();
+            var builder = Kernel.CreateBuilder();
+            builder.AddOpenAIChatCompletion(id, apiKey);
+            return builder.Build();
+        });
     }
 }

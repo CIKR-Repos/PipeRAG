@@ -71,7 +71,8 @@ import { ChatService, ChatMessage, ChatSession } from './chat.service';
         <!-- Input Area -->
         <div class="input-area">
           <textarea
-            [(ngModel)]="inputMessage"
+            [ngModel]="inputMessage()"
+            (ngModelChange)="inputMessage.set($event)"
             (keydown.enter)="onEnter($event)"
             placeholder="Type your question..."
             rows="2"
