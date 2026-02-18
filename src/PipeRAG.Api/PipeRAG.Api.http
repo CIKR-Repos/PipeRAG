@@ -1,0 +1,6 @@
+@PipeRAG.Api_HostAddress = http://localhost:5296
+
+GET {{PipeRAG.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

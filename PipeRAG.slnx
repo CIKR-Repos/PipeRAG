@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PipeRAG.Api/PipeRAG.Api.csproj" />
+    <Project Path="src/PipeRAG.Core/PipeRAG.Core.csproj" />
+    <Project Path="src/PipeRAG.Infrastructure/PipeRAG.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PipeRAG.Tests/PipeRAG.Tests.csproj" />
+  </Folder>
+</Solution>
