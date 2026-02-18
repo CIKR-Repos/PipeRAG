@@ -63,7 +63,7 @@ public class QueryEngineService : IQueryEngineService
         var kernel = BuildChatKernel(models.ChatModel);
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
 
-        var chatHistory = BuildChatHistory(conversationHistory, sources);
+        var chatHistory = BuildChatHistory(conversationHistory, sources, userMessage);
         var result = await chatService.GetChatMessageContentAsync(chatHistory, cancellationToken: ct);
         var responseText = result.Content ?? string.Empty;
         var tokensUsed = responseText.Length / 4;
@@ -92,7 +92,7 @@ public class QueryEngineService : IQueryEngineService
         var conversationHistory = await _memory.GetConversationWindowAsync(sessionId, ct: ct);
         var kernel = BuildChatKernel(models.ChatModel);
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
-        var chatHistory = BuildChatHistory(conversationHistory, sources);
+        var chatHistory = BuildChatHistory(conversationHistory, sources, userMessage);
 
         var fullResponse = new StringBuilder();
 
