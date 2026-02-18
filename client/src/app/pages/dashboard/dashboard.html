@@ -1,0 +1,59 @@
+<app-navbar />
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>Your Projects</h1>
+    <button class="btn-create" (click)="openCreate()">+ New Project</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Loading projects...</div>
+  } @else if (projects().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h2>Create your first chatbot</h2>
+      <p>Upload documents and build a RAG-powered chatbot in seconds</p>
+      <button class="btn-create" (click)="openCreate()">+ Create Project</button>
+    </div>
+  } @else {
+    <div class="project-grid">
+      @for (p of projects(); track p.id) {
+        <a [routerLink]="['/projects', p.id, 'chat']" class="project-card">
+          <div class="project-icon">💬</div>
+          <h3>{{ p.name }}</h3>
+          @if (p.description) {
+            <p class="project-desc">{{ p.description }}</p>
+          }
+          <div class="project-meta">
+            <span>📄 {{ p.documentCount }} docs</span>
+            <span>{{ timeAgo(p.updatedAt ?? p.createdAt) }}</span>
+          </div>
+        </a>
+      }
+      <button class="project-card add-card" (click)="openCreate()">
+        <div class="add-icon">+</div>
+        <span>New Project</span>
+      </button>
+    </div>
+  }
+</div>
+
+<!-- Create Dialog -->
+@if (showCreate()) {
+  <div class="overlay" (click)="closeCreate()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2>Create New Project</h2>
+      <form (ngSubmit)="createProject()">
+        <label>Project Name</label>
+        <input type="text" [(ngModel)]="newName" name="name" placeholder="My Chatbot" required autofocus />
+        <label>Description (optional)</label>
+        <textarea [(ngModel)]="newDesc" name="desc" placeholder="What is this project for?" rows="3"></textarea>
+        <div class="dialog-actions">
+          <button type="button" class="btn-cancel" (click)="closeCreate()">Cancel</button>
+          <button type="submit" class="btn-submit" [disabled]="creating() || !newName.trim()">
+            {{ creating() ? 'Creating...' : 'Create Project' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
