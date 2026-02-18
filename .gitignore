@@ -33,6 +33,6 @@ uploads/
 logs/
 *.log
 
-# Node
+# Root node deps
 node_modules/
 package-lock.json
