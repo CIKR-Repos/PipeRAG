@@ -9,6 +9,13 @@ namespace PipeRAG.Infrastructure.Data;
 /// </summary>
 public class PipeRagDbContext : DbContext
 {
+    /// <summary>
+    /// Vector embedding dimension. Maps to the embedding model:
+    /// text-embedding-3-small = 1536 dimensions (default)
+    /// text-embedding-3-large = 3072 dimensions
+    /// </summary>
+    public static int EmbeddingDimension { get; set; } = 1536;
+
     public PipeRagDbContext(DbContextOptions<PipeRagDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
@@ -68,7 +75,7 @@ public class PipeRagDbContext : DbContext
         modelBuilder.Entity<DocumentChunk>(e =>
         {
             e.HasIndex(c => c.DocumentId);
-            e.Property(c => c.Embedding).HasColumnType("vector(1536)");
+            e.Property(c => c.Embedding).HasColumnType($"vector({EmbeddingDimension})");
             e.HasOne(c => c.Document).WithMany(d => d.Chunks).HasForeignKey(c => c.DocumentId).OnDelete(DeleteBehavior.Cascade);
         });
 
