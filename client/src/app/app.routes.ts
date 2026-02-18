@@ -13,6 +13,11 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    children: [],
+    children: [
+      {
+        path: 'projects/:projectId/chat',
+        loadComponent: () => import('./features/chat/chat.component').then((m) => m.ChatComponent),
+      },
+    ],
   },
 ];

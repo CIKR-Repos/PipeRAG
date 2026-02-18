@@ -47,6 +47,10 @@ builder.Services.AddSingleton<PipelineRunChannel>();
 builder.Services.AddScoped<IAutoPipelineService, AutoPipelineService>();
 builder.Services.AddHostedService<PipelineBackgroundService>();
 
+// Chat / Query Engine services
+builder.Services.AddScoped<IConversationMemoryService, ConversationMemoryService>();
+builder.Services.AddScoped<IQueryEngineService, QueryEngineService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtSecret = jwtSection["Secret"];
