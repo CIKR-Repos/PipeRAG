@@ -51,7 +51,7 @@ export class RegisterComponent {
     this.error.set('');
     try {
       await this.auth.register(this.email, this.password, this.displayName);
-      this.router.navigate(['/']);
+      this.router.navigate(['/dashboard']);
     } catch (e: any) {
       this.error.set(e?.error?.error || 'Registration failed');
     } finally {
