@@ -18,7 +18,6 @@ interface ProjectSummary {
   standalone: true,
   imports: [NavbarComponent, RouterLink, FormsModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss',
 })
 export class DashboardComponent implements OnInit {
   private http = inject(HttpClient);
@@ -35,26 +34,16 @@ export class DashboardComponent implements OnInit {
     this.loadProjects();
   }
 
-  async loadProjects() {
+  loadProjects() {
     this.loading.set(true);
     this.http.get<ProjectSummary[]>('/api/projects').subscribe({
-      next: (data) => {
-        this.projects.set(data);
-        this.loading.set(false);
-      },
+      next: (data) => { this.projects.set(data); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
   }
 
-  openCreate() {
-    this.showCreate.set(true);
-    this.newName = '';
-    this.newDesc = '';
-  }
-
-  closeCreate() {
-    this.showCreate.set(false);
-  }
+  openCreate() { this.showCreate.set(true); this.newName = ''; this.newDesc = ''; }
+  closeCreate() { this.showCreate.set(false); }
 
   createProject() {
     if (!this.newName.trim()) return;
@@ -63,11 +52,7 @@ export class DashboardComponent implements OnInit {
       name: this.newName.trim(),
       description: this.newDesc.trim() || null,
     }).subscribe({
-      next: (p) => {
-        this.creating.set(false);
-        this.showCreate.set(false);
-        this.router.navigate(['/projects', p.id, 'chat']);
-      },
+      next: (p) => { this.creating.set(false); this.showCreate.set(false); this.router.navigate(['/projects', p.id, 'chat']); },
       error: () => this.creating.set(false),
     });
   }
@@ -80,7 +65,6 @@ export class DashboardComponent implements OnInit {
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
   }
 }
