@@ -1,25 +1,70 @@
+using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using PipeRAG.Api.Middleware;
+using PipeRAG.Core.Interfaces;
 using PipeRAG.Infrastructure.Data;
+using PipeRAG.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 // Database
-// Connection string should come from environment variables or user secrets, not appsettings.json.
-// Example: dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=piperag;Username=piperag;Password=secret"
-// Or set the environment variable: ConnectionStrings__DefaultConnection
 builder.Services.AddDbContext<PipeRagDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         npgsql => npgsql.UseVector()));
 
-// Embedding dimension configuration (used by DbContext for vector column sizing)
+// Embedding dimension configuration
 var embeddingDimension = builder.Configuration.GetValue("Embedding:Dimension", 1536);
 builder.Services.AddSingleton(new EmbeddingOptions(embeddingDimension));
 PipeRagDbContext.EmbeddingDimension = embeddingDimension;
+
+// Auth service
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// JWT Authentication
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtSecret = jwtSection["Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    if (builder.Environment.IsDevelopment())
+        jwtSecret = "PipeRAG-Dev-Secret-Key-Change-In-Production-Min32Chars!";
+    else
+        throw new InvalidOperationException("JWT Secret must be configured in production.");
+}
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSection["Issuer"] ?? "PipeRAG",
+        ValidAudience = jwtSection["Audience"] ?? "PipeRAG",
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -29,7 +74,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<RateLimitingMiddleware>();
 app.MapControllers();
 
 // Health check endpoint
@@ -75,7 +122,10 @@ app.Run();
 
 /// <summary>
 /// Configuration for embedding vector dimensions.
-/// text-embedding-3-small = 1536 dimensions (default)
-/// text-embedding-3-large = 3072 dimensions
 /// </summary>
 public record EmbeddingOptions(int Dimension = 1536);
+
+/// <summary>
+/// Marker class for test access to Program.
+/// </summary>
+public partial class Program { }

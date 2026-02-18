@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using PipeRAG.Core.Entities;
 using PipeRAG.Core.Enums;
 
@@ -30,13 +31,15 @@ public class PipeRagDbContext : DbContext
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Enable pgvector extension
-        modelBuilder.HasPostgresExtension("vector");
+        // Enable pgvector extension (skip for InMemory provider)
+        if (!Database.IsInMemory())
+            modelBuilder.HasPostgresExtension("vector");
 
         // Store enums as strings
         modelBuilder.Entity<User>(e =>
@@ -75,7 +78,10 @@ public class PipeRagDbContext : DbContext
         modelBuilder.Entity<DocumentChunk>(e =>
         {
             e.HasIndex(c => c.DocumentId);
-            e.Property(c => c.Embedding).HasColumnType($"vector({EmbeddingDimension})");
+            if (Database.IsInMemory())
+                e.Ignore(c => c.Embedding);
+            else
+                e.Property(c => c.Embedding).HasColumnType($"vector({EmbeddingDimension})");
             e.HasOne(c => c.Document).WithMany(d => d.Chunks).HasForeignKey(c => c.DocumentId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -121,6 +127,13 @@ public class PipeRagDbContext : DbContext
             e.HasIndex(a => a.CreatedAt);
             e.Property(a => a.Action).HasConversion<string>().HasMaxLength(20);
             e.HasOne(a => a.User).WithMany(u => u.AuditLogs).HasForeignKey(a => a.UserId);
+        });
+
+        modelBuilder.Entity<RefreshToken>(e =>
+        {
+            e.HasIndex(r => r.Token).IsUnique();
+            e.HasIndex(r => r.UserId);
+            e.HasOne(r => r.User).WithMany(u => u.RefreshTokens).HasForeignKey(r => r.UserId);
         });
     }
 }
