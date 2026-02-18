@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PipeRAG.Core.Interfaces;
@@ -10,16 +11,16 @@ namespace PipeRAG.Infrastructure.Services;
 public class PipelineBackgroundService : BackgroundService
 {
     private readonly PipelineRunChannel _channel;
-    private readonly IAutoPipelineService _pipelineService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<PipelineBackgroundService> _logger;
 
     public PipelineBackgroundService(
         PipelineRunChannel channel,
-        IAutoPipelineService pipelineService,
+        IServiceScopeFactory scopeFactory,
         ILogger<PipelineBackgroundService> logger)
     {
         _channel = channel;
-        _pipelineService = pipelineService;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -32,7 +33,9 @@ public class PipelineBackgroundService : BackgroundService
             try
             {
                 _logger.LogInformation("Processing pipeline run {RunId}", runId);
-                await _pipelineService.ExecutePipelineRunAsync(runId, stoppingToken);
+                using var scope = _scopeFactory.CreateScope();
+                var pipelineService = scope.ServiceProvider.GetRequiredService<IAutoPipelineService>();
+                await pipelineService.ExecutePipelineRunAsync(runId, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

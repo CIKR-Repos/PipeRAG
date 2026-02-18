@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using PipeRAG.Infrastructure.Data;
 namespace PipeRAG.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(PipeRagDbContext))]
-    partial class PipeRagDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218031848_ChatQueryEngine")]
+    partial class ChatQueryEngine
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
