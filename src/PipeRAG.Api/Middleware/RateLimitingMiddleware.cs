@@ -49,6 +49,8 @@ public class RateLimitingMiddleware
 
         var entry = _entries.GetOrAdd(key, _ => new RateLimitEntry(now));
 
+        int? retryAfter = null;
+
         lock (entry)
         {
             // Reset window if hour has passed
@@ -62,13 +64,16 @@ public class RateLimitingMiddleware
 
             if (entry.Count > limit)
             {
-                var retryAfter = (int)(3600 - (now - entry.WindowStart).TotalSeconds);
-                context.Response.StatusCode = 429;
-                context.Response.Headers["Retry-After"] = retryAfter.ToString();
-                context.Response.ContentType = "application/json";
-                context.Response.WriteAsync($"{{\"error\":\"Rate limit exceeded. Retry after {retryAfter} seconds.\"}}");
-                return;
+                retryAfter = (int)(3600 - (now - entry.WindowStart).TotalSeconds);
             }
+        }
+
+        if (retryAfter.HasValue)
+        {
+            context.Response.StatusCode = 429;
+            context.Response.Headers["Retry-After"] = retryAfter.Value.ToString();
+            await context.Response.WriteAsJsonAsync(new { error = $"Rate limit exceeded. Retry after {retryAfter.Value} seconds." });
+            return;
         }
 
         await _next(context);

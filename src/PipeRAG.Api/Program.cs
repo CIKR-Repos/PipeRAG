@@ -35,7 +35,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtSecret = jwtSection["Secret"] ?? "PipeRAG-Dev-Secret-Key-Change-In-Production-Min32Chars!";
+var jwtSecret = jwtSection["Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    if (builder.Environment.IsDevelopment())
+        jwtSecret = "PipeRAG-Dev-Secret-Key-Change-In-Production-Min32Chars!";
+    else
+        throw new InvalidOperationException("JWT Secret must be configured in production.");
+}
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 export interface AuthResponse {
   accessToken: string;
@@ -35,30 +36,25 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<void> {
-    const res = await this.http
-      .post<AuthResponse>('/api/auth/login', { email, password })
-      .toPromise();
-    if (res) this.handleAuth(res);
+    const res = await firstValueFrom(this.http
+      .post<AuthResponse>('/api/auth/login', { email, password }));
+    this.handleAuth(res);
   }
 
   async register(email: string, password: string, displayName: string): Promise<void> {
-    const res = await this.http
-      .post<AuthResponse>('/api/auth/register', { email, password, displayName })
-      .toPromise();
-    if (res) this.handleAuth(res);
+    const res = await firstValueFrom(this.http
+      .post<AuthResponse>('/api/auth/register', { email, password, displayName }));
+    this.handleAuth(res);
   }
 
   async refresh(): Promise<string | null> {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) return null;
     try {
-      const res = await this.http
-        .post<AuthResponse>('/api/auth/refresh', { refreshToken })
-        .toPromise();
-      if (res) {
-        this.handleAuth(res);
-        return res.accessToken;
-      }
+      const res = await firstValueFrom(this.http
+        .post<AuthResponse>('/api/auth/refresh', { refreshToken }));
+      this.handleAuth(res);
+      return res.accessToken;
     } catch {
       this.logout();
     }
