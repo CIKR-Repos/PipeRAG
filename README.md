@@ -61,23 +61,66 @@ piperag/
 ## Development
 
 ```bash
+# Start infrastructure
+docker-compose up -d postgres redis
+
 # Backend
 cd src/PipeRAG.Api && dotnet run
 
 # Frontend
 cd client && ng serve
 
-# Database (Docker)
-docker-compose up -d postgres redis
+# Run tests
+dotnet test tests/PipeRAG.Tests/PipeRAG.Tests.csproj
 ```
 
-## Feature Development
+## Deployment
 
-Every feature follows this workflow:
-1. Feature branch from `main`
-2. Implementation + tests + documentation in `docs/`
-3. PR to `main` for review
-4. Merge after approval
+### Docker
+
+```bash
+# Build the image
+docker build -t piperag .
+
+# Run with Docker Compose (production profile)
+JWT_SECRET=your-secret OPENAI_API_KEY=sk-... docker-compose --profile production up -d
+```
+
+### fly.io
+
+```bash
+# First-time setup
+fly launch --no-deploy
+fly secrets set JWT_SECRET=your-secret
+fly secrets set OPENAI_API_KEY=sk-...
+fly secrets set DATABASE_URL=postgres://...
+fly secrets set STRIPE_SECRET_KEY=sk_...
+
+# Deploy
+fly deploy
+```
+
+### CI/CD
+
+The GitHub Actions pipeline (`.github/workflows/ci.yml`) runs automatically:
+
+| Trigger | Steps |
+|---------|-------|
+| **PR to main** | Build → Test → Docker build (no push) |
+| **Push to main** | Build → Test → Docker push to GHCR → Deploy to fly.io |
+
+**Required secrets**: `FLY_API_TOKEN` (for fly.io deployment)
+
+### Environment Variables (Production)
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | JWT signing key (min 32 chars) |
+| `OPENAI_API_KEY` | OpenAI API key for embeddings/LLM |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `REDIS_URL` | Redis connection string |
 
 ## License
 
