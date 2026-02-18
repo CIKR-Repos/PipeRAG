@@ -61,15 +61,11 @@ public class DocumentsController : ControllerBase
     [RequestSizeLimit(500 * 1024 * 1024)]
     public async Task<ActionResult<DocumentUploadResponse>> Upload(Guid projectId, List<IFormFile> files, CancellationToken ct)
     {
-        var project = await _db.Projects.FindAsync([projectId], ct);
+        var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null)
             return NotFound(new { error = "Project not found." });
 
-        var userId = GetUserId();
-        if (project.OwnerId != userId)
-            return Forbid();
-
-        var user = await _db.Users.FindAsync([userId], ct);
+        var user = await _db.Users.FindAsync([GetUserId()], ct);
         var tier = user?.Tier ?? UserTier.Free;
         var maxSize = MaxFileSizeByTier[tier];
 
@@ -160,7 +156,7 @@ public class DocumentsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<DocumentResponse>>> List(Guid projectId, CancellationToken ct)
     {
-        var project = await _db.Projects.FindAsync([projectId], ct);
+        var project = await GetAuthorizedProjectAsync(projectId, ct);
         if (project is null) return NotFound(new { error = "Project not found." });
 
         var docs = await _db.Documents
@@ -177,6 +173,9 @@ public class DocumentsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<DocumentResponse>> Get(Guid projectId, Guid id, CancellationToken ct)
     {
+        var project = await GetAuthorizedProjectAsync(projectId, ct);
+        if (project is null) return NotFound(new { error = "Project not found." });
+
         var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == id && d.ProjectId == projectId, ct);
         if (doc is null) return NotFound(new { error = "Document not found." });
         return Ok(ToResponse(doc));
@@ -191,9 +190,9 @@ public class DocumentsController : ControllerBase
         var doc = await _db.Documents.Include(d => d.Chunks).FirstOrDefaultAsync(d => d.Id == id && d.ProjectId == projectId, ct);
         if (doc is null) return NotFound(new { error = "Document not found." });
 
-        var project = await _db.Projects.FindAsync([projectId], ct);
-        if (project is null || project.OwnerId != GetUserId())
-            return Forbid();
+        var project = await GetAuthorizedProjectAsync(projectId, ct);
+        if (project is null)
+            return NotFound(new { error = "Project not found." });
 
         // Delete file from storage
         try { await _storage.DeleteFileAsync(doc.StoragePath, ct); }
@@ -212,11 +211,14 @@ public class DocumentsController : ControllerBase
     [HttpGet("{documentId:guid}/chunks")]
     public async Task<ActionResult<ChunkPreviewResponse>> GetChunks(
         Guid projectId, Guid documentId,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        [FromQuery] ChunkPreviewRequest request,
         CancellationToken ct = default)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        var project = await GetAuthorizedProjectAsync(projectId, ct);
+        if (project is null) return NotFound(new { error = "Project not found." });
+
+        var page = request.Page;
+        var pageSize = request.PageSize;
 
         var docExists = await _db.Documents.AnyAsync(d => d.Id == documentId && d.ProjectId == projectId, ct);
         if (!docExists) return NotFound(new { error = "Document not found." });
@@ -233,6 +235,14 @@ public class DocumentsController : ControllerBase
             .ToListAsync(ct);
 
         return Ok(new ChunkPreviewResponse(chunks, totalCount, page, pageSize));
+    }
+
+    private async Task<Project?> GetAuthorizedProjectAsync(Guid projectId, CancellationToken ct)
+    {
+        var project = await _db.Projects.FindAsync([projectId], ct);
+        if (project is null || project.OwnerId != GetUserId())
+            return null;
+        return project;
     }
 
     private Guid GetUserId()

@@ -17,6 +17,10 @@ public class LocalFileStorageService : IFileStorageService
     /// <inheritdoc />
     public async Task<string> SaveFileAsync(Guid projectId, Guid documentId, string fileName, Stream content, CancellationToken ct = default)
     {
+        // Sanitize fileName to prevent path traversal
+        fileName = Path.GetFileName(fileName);
+        fileName = string.Concat(fileName.Split(Path.GetInvalidFileNameChars()));
+
         var relativePath = Path.Combine(projectId.ToString(), documentId.ToString(), fileName);
         var fullPath = Path.Combine(_basePath, relativePath);
         var dir = Path.GetDirectoryName(fullPath)!;

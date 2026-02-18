@@ -8,6 +8,7 @@ using PipeRAG.Api.Controllers;
 using PipeRAG.Core.Entities;
 using PipeRAG.Core.Enums;
 using PipeRAG.Infrastructure.Data;
+using PipeRAG.Core.DTOs;
 using PipeRAG.Infrastructure.Services;
 
 namespace PipeRAG.Tests;
@@ -100,7 +101,7 @@ public class DocumentControllerTests : IDisposable
         await _controller.Upload(_projectId, [file], CancellationToken.None);
 
         var doc = await _db.Documents.FirstAsync();
-        var result = await _controller.GetChunks(_projectId, doc.Id, 1, 10, CancellationToken.None);
+        var result = await _controller.GetChunks(_projectId, doc.Id, new ChunkPreviewRequest(1, 10), CancellationToken.None);
 
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var preview = ok.Value.Should().BeOfType<Core.DTOs.ChunkPreviewResponse>().Subject;
@@ -127,6 +128,59 @@ public class DocumentControllerTests : IDisposable
     {
         var result = await _controller.Get(_projectId, Guid.NewGuid(), CancellationToken.None);
         result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Upload_FileOverFreeTierLimit_Fails()
+    {
+        var bigStream = new MemoryStream(new byte[100]); // small backing array
+        var file = new FormFile(bigStream, 0, 51L * 1024 * 1024, "files", "big.txt");
+
+        var result = await _controller.Upload(_projectId, [file], CancellationToken.None);
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = ok.Value.Should().BeOfType<Core.DTOs.DocumentUploadResponse>().Subject;
+        response.TotalFiles.Should().Be(1);
+        response.SuccessCount.Should().Be(0);
+        response.FailedCount.Should().Be(1);
+        (await _db.Documents.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Upload_FileUnderProTierLimit_Succeeds()
+    {
+        // Upgrade user to Pro
+        var user = await _db.Users.FindAsync(_userId);
+        user!.Tier = UserTier.Pro;
+        await _db.SaveChangesAsync();
+
+        // 51MB file - over Free limit but under Pro limit
+        var bigStream = new MemoryStream(new byte[100]);
+        var file = new FormFile(bigStream, 0, 51L * 1024 * 1024, "files", "big.txt");
+
+        var result = await _controller.Upload(_projectId, [file], CancellationToken.None);
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = ok.Value.Should().BeOfType<Core.DTOs.DocumentUploadResponse>().Subject;
+        response.SuccessCount.Should().Be(1);
+        response.FailedCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Upload_MultiFile_OneValidOneTooLarge_PartialSuccess()
+    {
+        var validFile = CreateFormFile("small.txt", "Hello world content here.");
+        var bigStream = new MemoryStream(new byte[100]);
+        var bigFile = new FormFile(bigStream, 0, 51L * 1024 * 1024, "files", "big.txt");
+
+        var result = await _controller.Upload(_projectId, [validFile, bigFile], CancellationToken.None);
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = ok.Value.Should().BeOfType<Core.DTOs.DocumentUploadResponse>().Subject;
+        response.TotalFiles.Should().Be(2);
+        response.SuccessCount.Should().Be(1);
+        response.FailedCount.Should().Be(1);
+        (await _db.Documents.CountAsync()).Should().Be(1);
     }
 
     private static IFormFile CreateFormFile(string fileName, string content)
