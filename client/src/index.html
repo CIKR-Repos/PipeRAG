@@ -1,11 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="utf-8">
-  <title>Client</title>
+  <title>PipeRAG</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Prevent flash of wrong theme
+    (function() {
+      var theme = localStorage.getItem('piperag-theme');
+      var isDark = theme === 'dark' || (!theme && true) ||
+        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', isDark);
+      document.documentElement.classList.toggle('light', !isDark);
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

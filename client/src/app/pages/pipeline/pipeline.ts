@@ -58,27 +58,27 @@ export class PipelineComponent implements OnInit {
   blockClass(block: PipelineBlock): string {
     const selected = this.svc.selectedBlockId() === block.id;
     const colors: Record<BlockType, string> = {
-      source: selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white',
-      chunking: selected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 bg-white',
-      embedding: selected ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-white',
-      retrieval: selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white',
-      generation: selected ? 'border-rose-500 bg-rose-50' : 'border-gray-200 bg-white',
+      source: selected ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-border bg-surface-2',
+      chunking: selected ? 'border-amber-500/50 bg-amber-500/10' : 'border-border bg-surface-2',
+      embedding: selected ? 'border-purple-500/50 bg-purple-500/10' : 'border-border bg-surface-2',
+      retrieval: selected ? 'border-blue-500/50 bg-blue-500/10' : 'border-border bg-surface-2',
+      generation: selected ? 'border-rose-500/50 bg-rose-500/10' : 'border-border bg-surface-2',
     };
     return colors[block.type];
   }
 
   blockIconBg(block: PipelineBlock): string {
     const colors: Record<BlockType, string> = {
-      source: 'bg-emerald-100', chunking: 'bg-amber-100', embedding: 'bg-purple-100',
-      retrieval: 'bg-blue-100', generation: 'bg-rose-100',
+      source: 'bg-emerald-500/15', chunking: 'bg-amber-500/15', embedding: 'bg-purple-500/15',
+      retrieval: 'bg-blue-500/15', generation: 'bg-rose-500/15',
     };
     return colors[block.type];
   }
 
   blockTypeBadge(block: PipelineBlock): string {
     const colors: Record<BlockType, string> = {
-      source: 'text-emerald-700', chunking: 'text-amber-700', embedding: 'text-purple-700',
-      retrieval: 'text-blue-700', generation: 'text-rose-700',
+      source: 'text-emerald-400', chunking: 'text-amber-400', embedding: 'text-purple-400',
+      retrieval: 'text-blue-400', generation: 'text-rose-400',
     };
     return colors[block.type];
   }

@@ -1,136 +1,271 @@
-<div class="min-h-screen bg-white">
-  <!-- Nav -->
-  <nav class="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-    <div class="flex items-center gap-2 text-2xl font-bold text-dark">
-      <span class="text-3xl">⚡</span>
-      <span>PipeRAG</span>
-    </div>
-    <div class="flex items-center gap-6">
-      <a routerLink="/login" class="text-gray-500 hover:text-dark font-medium transition-colors duration-300">Login</a>
-      <a routerLink="/register"
-         class="bg-accent text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-accent/85 transition-all duration-300 hover:-translate-y-0.5">
-        Get Started Free
-      </a>
+<div class="min-h-screen bg-surface-1 text-text-primary">
+
+  <!-- ============ NAV ============ -->
+  <nav class="sticky top-0 z-50 border-b border-border/50 bg-surface-1/70 backdrop-blur-2xl">
+    <div class="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+      <div class="flex items-center gap-2.5 text-xl font-bold tracking-tight">
+        <span class="text-2xl">&#9889;</span>
+        <span>PipeRAG</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <app-theme-toggle />
+        <a routerLink="/login"
+           class="text-text-secondary hover:text-text-primary font-medium transition-colors duration-200 text-sm hidden sm:inline">
+          Login
+        </a>
+        <a routerLink="/register"
+           class="bg-accent hover:bg-accent-hover text-white px-5 py-2 rounded-lg font-semibold text-sm
+                  transition-all duration-300 hover:-translate-y-0.5 shadow-lg shadow-accent/25
+                  hover:shadow-xl hover:shadow-accent/30">
+          Get Started Free
+        </a>
+      </div>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <section class="relative bg-gradient-to-br from-dark via-dark-alt to-[#0e1628] px-6 py-24 text-center overflow-hidden">
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(0,153,255,0.15)_0%,transparent_70%)] pointer-events-none"></div>
-    <div class="relative z-10 max-w-3xl mx-auto">
-      <h1 class="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-6">
-        Upload files →<br>
-        <span class="bg-gradient-to-r from-accent to-cyan bg-clip-text text-transparent">Get a chatbot in 30 seconds</span>
+  <!-- ============ HERO ============ -->
+  <section class="relative px-6 pt-24 pb-20 md:pt-36 md:pb-28 overflow-hidden">
+    <!-- Gradient orbs -->
+    <div class="absolute top-[-10%] left-[15%] w-[500px] h-[500px] rounded-full
+                bg-accent/15 blur-[120px] orb-1 pointer-events-none"></div>
+    <div class="absolute bottom-[-5%] right-[10%] w-[400px] h-[400px] rounded-full
+                bg-cyan/10 blur-[100px] orb-2 pointer-events-none"></div>
+    <div class="absolute top-[40%] left-[60%] w-[300px] h-[300px] rounded-full
+                bg-accent-muted/10 blur-[80px] orb-3 pointer-events-none"></div>
+
+    <!-- Dot grid overlay -->
+    <div class="absolute inset-0 opacity-[0.03]"
+         style="background-image: radial-gradient(circle, currentColor 1px, transparent 1px); background-size: 32px 32px;">
+    </div>
+
+    <div class="relative z-10 max-w-3xl mx-auto text-center">
+      <!-- Announcement badge -->
+      <div class="reveal reveal-d1 inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full
+                  bg-accent/10 border border-accent/20 text-accent text-sm font-medium mb-8">
+        <span class="relative w-2 h-2 rounded-full bg-accent pulse-dot"></span>
+        Now with streaming responses
+      </div>
+
+      <!-- Headline -->
+      <h1 class="reveal reveal-d2 text-4xl sm:text-5xl md:text-7xl font-extrabold leading-[1.08] tracking-tight mb-6">
+        Upload files.<br>
+        <span class="gradient-text">Get a chatbot in 30s.</span>
       </h1>
-      <p class="text-lg text-white/70 max-w-xl mx-auto mb-10 leading-relaxed">
+
+      <!-- Subhead -->
+      <p class="reveal reveal-d3 text-base sm:text-lg text-text-secondary max-w-xl mx-auto mb-10 leading-relaxed">
         Build powerful RAG pipelines with zero code. Upload your documents,
-        configure your pipeline visually, and deploy an AI chatbot instantly.
+        configure visually, and deploy an AI chatbot — instantly.
       </p>
-      <div class="flex justify-center gap-4 flex-wrap">
+
+      <!-- CTAs -->
+      <div class="reveal reveal-d4 flex justify-center gap-4 flex-wrap">
         <a routerLink="/register"
-           class="bg-gradient-to-br from-accent to-cyan text-white px-8 py-3.5 rounded-xl font-semibold text-base hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,153,255,0.35)] transition-all duration-300">
+           class="group bg-accent hover:bg-accent-hover text-white px-8 py-3.5 rounded-xl font-bold text-base
+                  transition-all duration-300 hover:-translate-y-0.5
+                  shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/40">
           Get Started Free
+          <span class="inline-block ml-1.5 transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
         </a>
         <a routerLink="/login"
-           class="bg-white/10 text-white px-8 py-3.5 rounded-xl font-semibold text-base border border-white/20 hover:bg-white/15 hover:-translate-y-0.5 transition-all duration-300">
+           class="bg-surface-2 text-text-primary px-8 py-3.5 rounded-xl font-semibold text-base
+                  border border-border hover:border-accent/30 hover:bg-surface-3
+                  transition-all duration-300">
           Login
         </a>
       </div>
     </div>
   </section>
 
-  <!-- Features -->
-  <section class="py-20 px-6 max-w-6xl mx-auto">
-    <h2 class="text-center text-3xl md:text-4xl font-bold text-dark mb-12">Everything you need</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      @for (feature of features; track feature.title) {
-        <div class="bg-white border border-gray-200 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-accent/30">
-          <div class="text-4xl mb-4">{{ feature.icon }}</div>
-          <h3 class="text-xl font-bold text-dark mb-3">{{ feature.title }}</h3>
-          <p class="text-gray-500 leading-relaxed text-sm">{{ feature.desc }}</p>
-        </div>
-      }
-    </div>
-  </section>
-
-  <!-- How it works -->
-  <section class="py-20 px-6 bg-gray-50">
-    <h2 class="text-center text-3xl md:text-4xl font-bold text-dark mb-12">How it works</h2>
-    <div class="flex justify-center items-center gap-6 max-w-4xl mx-auto flex-wrap">
-      @for (step of steps; track step.num; let last = $last) {
-        <div class="text-center flex-1 min-w-[180px]">
-          <div class="w-14 h-14 bg-gradient-to-br from-accent to-cyan text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-            {{ step.num }}
+  <!-- ============ SOCIAL PROOF ============ -->
+  <section class="relative py-16 px-6 border-y border-border/50">
+    <div class="max-w-5xl mx-auto">
+      <p class="text-center text-text-muted text-xs uppercase tracking-[0.2em] font-semibold mb-10">
+        Trusted by teams worldwide
+      </p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+        @for (stat of stats; track stat.label; let i = $index) {
+          <div class="text-center stat-item"
+               [class]="'stat-d' + (i + 1)">
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary mb-1">
+              {{ stat.value }}
+            </div>
+            <div class="text-sm text-text-tertiary font-medium">{{ stat.label }}</div>
           </div>
-          <h3 class="text-lg font-bold text-dark mb-2">{{ step.title }}</h3>
-          <p class="text-gray-500 text-sm">{{ step.desc }}</p>
-        </div>
-        @if (!last) {
-          <div class="w-16 h-0.5 bg-gradient-to-r from-accent to-cyan shrink-0 hidden md:block"></div>
         }
-      }
-    </div>
-  </section>
-
-  <!-- Pricing -->
-  <section class="py-20 px-6 max-w-6xl mx-auto">
-    <h2 class="text-center text-3xl md:text-4xl font-bold text-dark mb-12">Simple pricing</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-4xl mx-auto">
-      <!-- Free -->
-      <div class="bg-white border border-gray-200 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <h3 class="text-xl font-bold text-dark mb-3">Free</h3>
-        <div class="text-5xl font-extrabold text-dark mb-6">$0<span class="text-base font-normal text-gray-500">/mo</span></div>
-        <ul class="text-left space-y-3 mb-8">
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> 1 project</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> 10 documents</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> 100 queries/day</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Community support</li>
-        </ul>
-        <a routerLink="/register" class="block w-full py-3 rounded-xl font-semibold border border-gray-200 text-dark hover:bg-gray-50 transition-all duration-300">Start Free</a>
-      </div>
-      <!-- Pro -->
-      <div class="bg-white border-2 border-accent rounded-2xl p-8 text-center shadow-[0_8px_30px_rgba(0,153,255,0.15)] relative transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-br from-accent to-cyan text-white px-4 py-1 rounded-full text-xs font-semibold">Popular</span>
-        <h3 class="text-xl font-bold text-dark mb-3">Pro</h3>
-        <div class="text-5xl font-extrabold text-dark mb-6">$29<span class="text-base font-normal text-gray-500">/mo</span></div>
-        <ul class="text-left space-y-3 mb-8">
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Unlimited projects</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> 500 documents</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Unlimited queries</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Priority support</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Custom embeddings</li>
-        </ul>
-        <a routerLink="/register" class="block w-full py-3 rounded-xl font-semibold bg-gradient-to-br from-accent to-cyan text-white hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300">Get Pro</a>
-      </div>
-      <!-- Enterprise -->
-      <div class="bg-white border border-gray-200 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <h3 class="text-xl font-bold text-dark mb-3">Enterprise</h3>
-        <div class="text-5xl font-extrabold text-dark mb-6">Custom</div>
-        <ul class="text-left space-y-3 mb-8">
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Everything in Pro</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> SSO & SAML</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> Dedicated infrastructure</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> SLA & 24/7 support</li>
-          <li class="flex items-center gap-2 text-gray-500 text-sm"><span class="text-accent font-bold">✓</span> On-premise option</li>
-        </ul>
-        <a href="mailto:hello&#64;piperag.dev" class="block w-full py-3 rounded-xl font-semibold border border-gray-200 text-dark hover:bg-gray-50 transition-all duration-300">Contact Sales</a>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="bg-dark py-12 px-6 text-white/60">
-    <div class="max-w-6xl mx-auto text-center">
-      <div class="text-xl font-bold text-white mb-4">
-        <span class="text-2xl">⚡</span> PipeRAG
+  <!-- ============ FEATURES — BENTO GRID ============ -->
+  <section class="py-24 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything you need</h2>
+        <p class="text-text-secondary max-w-2xl mx-auto">
+          Powerful features to build, deploy, and scale your RAG pipelines — no code required.
+        </p>
       </div>
-      <div class="flex justify-center gap-8 mb-6">
-        <a href="#" class="text-white/50 hover:text-white text-sm transition-colors duration-300">Docs</a>
-        <a href="#" class="text-white/50 hover:text-white text-sm transition-colors duration-300">GitHub</a>
-        <a href="#" class="text-white/50 hover:text-white text-sm transition-colors duration-300">Privacy</a>
-        <a href="#" class="text-white/50 hover:text-white text-sm transition-colors duration-300">Terms</a>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @for (feature of features; track feature.title; let i = $index) {
+          <div class="card-glow bg-surface-2 border border-border rounded-2xl p-8 group"
+               [class.md:col-span-2]="feature.span">
+            <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center text-2xl mb-5
+                        group-hover:bg-accent/20 transition-colors duration-300"
+                 [innerHTML]="feature.icon">
+            </div>
+            <h3 class="text-lg font-bold text-text-primary mb-2.5">{{ feature.title }}</h3>
+            <p class="text-text-secondary text-sm leading-relaxed">{{ feature.desc }}</p>
+          </div>
+        }
       </div>
-      <p class="text-sm text-white/30">&copy; 2026 PipeRAG. All rights reserved.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="py-24 px-6 bg-surface-0/50">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-center text-3xl md:text-4xl font-bold tracking-tight mb-16">How it works</h2>
+      <div class="flex flex-col md:flex-row justify-center items-start gap-8 md:gap-0">
+        @for (step of steps; track step.num; let last = $last) {
+          <div class="flex-1 text-center relative px-4">
+            <!-- Step number circle -->
+            <div class="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center
+                        text-xl font-bold text-white
+                        bg-gradient-to-br from-accent to-accent-muted
+                        shadow-lg shadow-accent/25 relative z-10">
+              {{ step.num }}
+            </div>
+            <h3 class="text-lg font-bold text-text-primary mb-2">{{ step.title }}</h3>
+            <p class="text-text-secondary text-sm leading-relaxed max-w-[220px] mx-auto">{{ step.desc }}</p>
+          </div>
+          @if (!last) {
+            <!-- Connector line -->
+            <div class="hidden md:flex items-center self-[28px] mt-7 shrink-0">
+              <div class="w-20 h-[2px] bg-gradient-to-r from-accent/60 to-cyan/40 rounded-full"></div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRICING ============ -->
+  <section class="py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-center text-3xl md:text-4xl font-bold tracking-tight mb-4">Simple pricing</h2>
+      <p class="text-center text-text-secondary mb-16 max-w-lg mx-auto">
+        Start free, scale when you're ready. No hidden fees.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        @for (plan of plans; track plan.name) {
+          @if (plan.popular) {
+            <!-- Pro card with gradient border -->
+            <div class="pricing-glow rounded-2xl p-[1px] relative md:scale-105 md:-translate-y-2">
+              <span class="absolute -top-3 left-1/2 -translate-x-1/2 z-10
+                           bg-accent text-white px-4 py-1 rounded-full text-xs font-semibold shadow-lg shadow-accent/30">
+                Popular
+              </span>
+              <div class="bg-surface-2 rounded-2xl p-8 text-center h-full">
+                <h3 class="text-xl font-bold text-text-primary mb-3">{{ plan.name }}</h3>
+                <div class="mb-6">
+                  <span class="text-5xl font-extrabold text-text-primary">{{ plan.price }}</span>
+                  <span class="text-text-tertiary text-sm">{{ plan.period }}</span>
+                </div>
+                <ul class="text-left space-y-3 mb-8">
+                  @for (f of plan.features; track f) {
+                    <li class="flex items-center gap-2.5 text-text-secondary text-sm">
+                      <span class="text-accent text-xs">&#10003;</span> {{ f }}
+                    </li>
+                  }
+                </ul>
+                <a routerLink="/register"
+                   class="block w-full py-3 rounded-xl font-semibold text-sm
+                          bg-accent hover:bg-accent-hover text-white
+                          shadow-lg shadow-accent/25 hover:shadow-xl
+                          transition-all duration-300 hover:-translate-y-0.5">
+                  {{ plan.cta }}
+                </a>
+              </div>
+            </div>
+          } @else {
+            <!-- Standard card -->
+            <div class="card-glow bg-surface-2 border border-border rounded-2xl p-8 text-center">
+              <h3 class="text-xl font-bold text-text-primary mb-3">{{ plan.name }}</h3>
+              <div class="mb-6">
+                <span class="text-5xl font-extrabold text-text-primary">{{ plan.price }}</span>
+                <span class="text-text-tertiary text-sm">{{ plan.period }}</span>
+              </div>
+              <ul class="text-left space-y-3 mb-8">
+                @for (f of plan.features; track f) {
+                  <li class="flex items-center gap-2.5 text-text-secondary text-sm">
+                    <span class="text-accent text-xs">&#10003;</span> {{ f }}
+                  </li>
+                }
+              </ul>
+              @if (plan.name === 'Enterprise') {
+                <a href="mailto:hello&#64;piperag.dev"
+                   class="block w-full py-3 rounded-xl font-semibold text-sm
+                          bg-surface-3 text-text-primary border border-border
+                          hover:border-accent/30 hover:bg-surface-3
+                          transition-all duration-300">
+                  {{ plan.cta }}
+                </a>
+              } @else {
+                <a routerLink="/register"
+                   class="block w-full py-3 rounded-xl font-semibold text-sm
+                          bg-surface-3 text-text-primary border border-border
+                          hover:border-accent/30 hover:bg-surface-3
+                          transition-all duration-300">
+                  {{ plan.cta }}
+                </a>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA BANNER ============ -->
+  <section class="py-20 px-6 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-cyan/5 pointer-events-none"></div>
+    <div class="relative z-10 max-w-2xl mx-auto text-center">
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+        Ready to build your chatbot?
+      </h2>
+      <p class="text-text-secondary mb-8">
+        Join thousands of teams using PipeRAG to build AI-powered chatbots in minutes.
+      </p>
+      <a routerLink="/register"
+         class="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white
+                px-8 py-3.5 rounded-xl font-bold text-base
+                transition-all duration-300 hover:-translate-y-0.5
+                shadow-xl shadow-accent/30 hover:shadow-2xl hover:shadow-accent/40">
+        Get Started Free <span>&rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="bg-surface-0 border-t border-border py-12 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-2 text-lg font-bold text-text-primary">
+          <span class="text-xl">&#9889;</span>
+          <span>PipeRAG</span>
+        </div>
+        <div class="flex items-center gap-8">
+          <a href="#" class="text-text-tertiary hover:text-text-primary text-sm transition-colors duration-200">Docs</a>
+          <a href="#" class="text-text-tertiary hover:text-text-primary text-sm transition-colors duration-200">GitHub</a>
+          <a href="#" class="text-text-tertiary hover:text-text-primary text-sm transition-colors duration-200">Privacy</a>
+          <a href="#" class="text-text-tertiary hover:text-text-primary text-sm transition-colors duration-200">Terms</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-6 border-t border-border/50 text-center">
+        <p class="text-xs text-text-muted">&copy; 2026 PipeRAG. All rights reserved.</p>
+      </div>
     </div>
   </footer>
+
 </div>
