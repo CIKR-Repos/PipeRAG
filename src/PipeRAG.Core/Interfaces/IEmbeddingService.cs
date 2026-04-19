@@ -14,4 +14,9 @@ public interface IEmbeddingService
     /// Generate embeddings for multiple texts in batch.
     /// </summary>
     Task<IReadOnlyList<float[]>> GenerateEmbeddingsBatchAsync(IReadOnlyList<string> texts, string modelId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the list of supported embedding model IDs (e.g., "text-embedding-3-small").
+    /// </summary>
+    IReadOnlyList<string> GetSupportedModels();
 }
